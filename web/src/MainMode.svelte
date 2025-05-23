@@ -12,11 +12,20 @@
   import { PropertiesTable } from "svelte-utils";
 
   let ways: FeatureCollection<LineString> = JSON.parse($backend!.getWays());
-  let faces: FeatureCollection<Polygon> = JSON.parse($backend!.getFaces());
+  let faces: FeatureCollection<Polygon, { edges: number[] }> = JSON.parse(
+    $backend!.getFaces(),
+  );
+
+  let hoveredFace: Feature<Polygon, { edges: number[] }> | null = null;
+  $: highlightEdges = hoveredFace ? hoveredFace.properties.edges : [];
 </script>
 
 <SplitComponent>
-  <div slot="sidebar">Controls</div>
+  <div slot="sidebar">
+    {#if hoveredFace}
+      {hoveredFace.properties.edges.length} edges touch this face
+    {/if}
+  </div>
 
   <div slot="map">
     <GeoJSON data={faces} generateId>
@@ -29,6 +38,7 @@
           "fill-color": "cyan",
           "fill-opacity": hoverStateFilter(0.2, 1),
         }}
+        bind:hovered={hoveredFace}
       />
     </GeoJSON>
 
@@ -40,7 +50,12 @@
         eventsIfTopMost
         paint={{
           "line-width": hoverStateFilter(5, 8),
-          "line-color": "black",
+          "line-color": [
+            "case",
+            ["in", ["id"], ["literal", highlightEdges]],
+            "red",
+            "black",
+          ],
         }}
       >
         <Popup openOn="hover" let:props>
