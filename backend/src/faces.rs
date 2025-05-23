@@ -1,7 +1,10 @@
-use geo::{Coord, LineString, Polygon, Relate};
+use geo::{Coord, Distance, Euclidean, InterpolatableLine, LineLocatePoint, LineString, Polygon};
 use i_overlay::core::fill_rule::FillRule;
 use i_overlay::float::slice::FloatSlice;
-use utils::osm2graph::{EdgeID, Graph};
+use utils::{
+    osm2graph::{EdgeID, Graph},
+    LineSplit,
+};
 
 pub struct Face {
     pub polygon: Polygon,
@@ -23,8 +26,7 @@ pub fn make_faces(graph: &Graph) -> Vec<Face> {
             .edges
             .values()
             .filter_map(|edge| {
-                // TODO is_touches?
-                if edge.linestring.relate(&polygon).is_intersects() {
+                if linestring_along_polygon(&edge.linestring, &polygon) {
                     Some(edge.id)
                 } else {
                     None
@@ -70,4 +72,29 @@ fn to_geo_linestring(pts: Vec<[f64; 2]>) -> LineString {
 
 fn to_i_overlay_contour(line_string: &LineString) -> Vec<[f64; 2]> {
     line_string.coords().map(|c| [c.x, c.y]).collect()
+}
+
+fn linestring_along_polygon(ls: &LineString, polygon: &Polygon) -> bool {
+    let Some(slice) = slice_line_to_match(polygon.exterior(), ls) else {
+        return false;
+    };
+    midpoint_distance(ls, &slice) <= 1.0
+}
+
+// Slice `source` to correspond to `target`, by finding the closest point along `source` matching
+// `target`'s start and end point.
+fn slice_line_to_match(source: &LineString, target: &LineString) -> Option<LineString> {
+    let start = source.line_locate_point(&target.points().next().unwrap())?;
+    let end = source.line_locate_point(&target.points().last().unwrap())?;
+    // Note this uses a copy of an API that hasn't been merged into georust yet. It seems to work
+    // fine in practice.
+    source.line_split_twice(start, end)?.into_second()
+}
+
+// Distance in meters between the middle of each linestring. Because ls1 and ls2 might point
+// opposite directions, using the start/end point is unnecessarily trickier.
+fn midpoint_distance(ls1: &LineString, ls2: &LineString) -> f64 {
+    let pt1 = ls1.point_at_ratio_from_start(&Euclidean, 0.5).unwrap();
+    let pt2 = ls2.point_at_ratio_from_start(&Euclidean, 0.5).unwrap();
+    Euclidean.distance(pt1, pt2)
 }
