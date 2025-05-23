@@ -51,7 +51,7 @@
   }
 
   function zoomFit() {
-    map!.fitBounds(bbox(JSON.parse($backend!.getWays())), {
+    map!.fitBounds(bbox(JSON.parse($backend!.getEdges())), {
       animate: false,
       padding: 10,
     });

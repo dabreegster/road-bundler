@@ -34,19 +34,21 @@ impl RoadBundler {
             console_log::init_with_level(log::Level::Info).unwrap();
         });
 
-        let graph =
+        let mut graph =
             utils::osm2graph::Graph::new(input_bytes, keep_edge, &mut utils::osm2graph::NullReader)
                 .map_err(err_to_js)?;
+        graph.compact_ids();
         let faces = make_faces(&graph);
         Ok(Self { graph, faces })
     }
 
-    #[wasm_bindgen(js_name = getWays)]
-    pub fn get_ways(&self) -> Result<String, JsValue> {
+    #[wasm_bindgen(js_name = getEdges)]
+    pub fn get_edges(&self) -> Result<String, JsValue> {
         let mut features = Vec::new();
         for (id, edge) in &self.graph.edges {
             let mut f = self.graph.mercator.to_wgs84_gj(&edge.linestring);
             f.id = Some(geojson::feature::Id::Number(id.0.into()));
+            f.set_property("edge_id", id.0);
             f.set_property("osm_way", edge.osm_way.0);
             f.set_property(
                 "osm_tags",

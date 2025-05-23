@@ -11,19 +11,21 @@
   import { Popup } from "svelte-utils/map";
   import { PropertiesTable } from "svelte-utils";
 
-  let ways: FeatureCollection<LineString> = JSON.parse($backend!.getWays());
+  let edges: FeatureCollection<LineString> = JSON.parse($backend!.getEdges());
   let faces: FeatureCollection<Polygon, { edges: number[] }> = JSON.parse(
     $backend!.getFaces(),
   );
 
   let hoveredFace: Feature<Polygon, { edges: number[] }> | null = null;
-  $: highlightEdges = hoveredFace ? hoveredFace.properties.edges : [];
+  $: highlightEdges = hoveredFace
+    ? JSON.parse(hoveredFace.properties.edges)
+    : [];
 </script>
 
 <SplitComponent>
   <div slot="sidebar">
     {#if hoveredFace}
-      {hoveredFace.properties.edges.length} edges touch this face
+      {highlightEdges.length} edges touch this face: {highlightEdges}
     {/if}
   </div>
 
@@ -42,9 +44,9 @@
       />
     </GeoJSON>
 
-    <GeoJSON data={ways}>
+    <GeoJSON data={edges}>
       <LineLayer
-        id="ways"
+        id="edges"
         beforeId="Road labels"
         manageHoverState
         eventsIfTopMost
@@ -59,7 +61,7 @@
         }}
       >
         <Popup openOn="hover" let:props>
-          <h4>Way {props.osm_way}</h4>
+          <h4>Edge {props.edge_id}, Way {props.osm_way}</h4>
           <PropertiesTable properties={JSON.parse(props.osm_tags)} />
         </Popup>
       </LineLayer>

@@ -9,10 +9,13 @@ pub struct Face {
 }
 
 pub fn make_faces(graph: &Graph) -> Vec<Face> {
+    info!("Splitting {} edges into faces", graph.edges.len());
     let polygons = split_polygon(
         &graph.boundary_polygon,
         graph.edges.values().map(|edge| &edge.linestring),
     );
+
+    info!("Matching {} faces with edges", polygons.len());
     let mut faces = Vec::new();
     for polygon in polygons {
         // TODO Speed up
@@ -20,7 +23,7 @@ pub fn make_faces(graph: &Graph) -> Vec<Face> {
             .edges
             .values()
             .filter_map(|edge| {
-                // TODO I'd expect is_touches to be appropriate, but even this is very wrong...
+                // TODO is_touches?
                 if edge.linestring.relate(&polygon).is_intersects() {
                     Some(edge.id)
                 } else {
