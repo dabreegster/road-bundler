@@ -1,18 +1,37 @@
 <script lang="ts">
   import { backend } from "./";
   import { SplitComponent } from "svelte-utils/two_column_layout";
-  import { GeoJSON, LineLayer, hoverStateFilter } from "svelte-maplibre";
-  import type { LineString, FeatureCollection } from "geojson";
+  import {
+    GeoJSON,
+    LineLayer,
+    hoverStateFilter,
+    FillLayer,
+  } from "svelte-maplibre";
+  import type { LineString, FeatureCollection, Polygon } from "geojson";
   import { Popup } from "svelte-utils/map";
   import { PropertiesTable } from "svelte-utils";
 
   let ways: FeatureCollection<LineString> = JSON.parse($backend!.getWays());
+  let faces: FeatureCollection<Polygon> = JSON.parse($backend!.getFaces());
 </script>
 
 <SplitComponent>
   <div slot="sidebar">Controls</div>
 
   <div slot="map">
+    <GeoJSON data={faces} generateId>
+      <FillLayer
+        id="faces"
+        beforeId="Road labels"
+        manageHoverState
+        eventsIfTopMost
+        paint={{
+          "fill-color": "cyan",
+          "fill-opacity": hoverStateFilter(0.2, 1),
+        }}
+      />
+    </GeoJSON>
+
     <GeoJSON data={ways}>
       <LineLayer
         id="ways"

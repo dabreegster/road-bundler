@@ -53,6 +53,7 @@ dependencies = [
  "console_log",
  "geo",
  "geojson",
+ "i_overlay",
  "log",
  "serde",
  "serde-wasm-bindgen",
