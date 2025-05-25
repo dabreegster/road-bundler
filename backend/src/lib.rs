@@ -79,7 +79,32 @@ impl RoadBundler {
         let mut features = Vec::new();
         for face in &self.faces {
             let mut f = self.graph.mercator.to_wgs84_gj(&face.polygon);
-            f.set_property("edges", face.edges.iter().map(|e| e.0).collect::<Vec<_>>());
+            f.set_property(
+                "boundary_edges",
+                face.boundary_edges.iter().map(|e| e.0).collect::<Vec<_>>(),
+            );
+            f.set_property(
+                "boundary_intersections",
+                face.boundary_intersections
+                    .iter()
+                    .map(|i| {
+                        serde_json::to_value(
+                            &self
+                                .graph
+                                .mercator
+                                .to_wgs84_gj(&Point::from(self.graph.intersections[i].point)),
+                        )
+                        .unwrap()
+                    })
+                    .collect::<Vec<_>>(),
+            );
+            f.set_property(
+                "connecting_edges",
+                face.connecting_edges
+                    .iter()
+                    .map(|e| e.0)
+                    .collect::<Vec<_>>(),
+            );
             f.set_property("num_buildings", face.num_buildings);
             features.push(f);
         }

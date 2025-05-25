@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use geo::{
     BoundingRect, Contains, Coord, Distance, Euclidean, InterpolatableLine, LineString, Point,
     Polygon, Rect,
@@ -5,13 +7,15 @@ use geo::{
 use i_overlay::core::fill_rule::FillRule;
 use i_overlay::float::slice::FloatSlice;
 use rstar::{primitives::GeomWithData, RTree, AABB};
-use utils::osm2graph::{EdgeID, Graph};
+use utils::osm2graph::{EdgeID, Graph, IntersectionID};
 
 use crate::slice_nearest_boundary::SliceNearEndpoints;
 
 pub struct Face {
     pub polygon: Polygon,
-    pub edges: Vec<EdgeID>,
+    pub boundary_edges: Vec<EdgeID>,
+    pub boundary_intersections: Vec<IntersectionID>,
+    pub connecting_edges: Vec<EdgeID>,
     pub num_buildings: usize,
 }
 
@@ -34,7 +38,7 @@ pub fn make_faces(graph: &Graph, building_centroids: &Vec<Point>) -> Vec<Face> {
     info!("Matching {} faces with edges", polygons.len());
     let mut faces = Vec::new();
     for polygon in polygons {
-        let edges = closest_edge
+        let boundary_edges = closest_edge
             .locate_in_envelope_intersecting(&aabb(&polygon))
             .filter_map(|obj| {
                 if linestring_along_polygon(obj.geom(), &polygon) {
@@ -44,6 +48,7 @@ pub fn make_faces(graph: &Graph, building_centroids: &Vec<Point>) -> Vec<Face> {
                 }
             })
             .collect();
+        let (boundary_intersections, connecting_edges) = find_connections(graph, &boundary_edges);
         let num_buildings = building_centroids
             .iter()
             .filter(|pt| polygon.contains(*pt))
@@ -51,7 +56,9 @@ pub fn make_faces(graph: &Graph, building_centroids: &Vec<Point>) -> Vec<Face> {
 
         faces.push(Face {
             polygon,
-            edges,
+            boundary_edges,
+            boundary_intersections,
+            connecting_edges,
             num_buildings,
         });
     }
@@ -125,5 +132,31 @@ fn aabb<G: BoundingRect<f64, Output = Option<Rect<f64>>>>(geom: &G) -> AABB<Poin
     AABB::from_corners(
         Point::new(bbox.min().x, bbox.min().y),
         Point::new(bbox.max().x, bbox.max().y),
+    )
+}
+
+fn find_connections(
+    graph: &Graph,
+    boundary_edges: &Vec<EdgeID>,
+) -> (Vec<IntersectionID>, Vec<EdgeID>) {
+    let mut boundary_intersections = HashSet::new();
+    for edge in boundary_edges {
+        let edge = &graph.edges[edge];
+        for i in [edge.src, edge.dst] {
+            boundary_intersections.insert(i);
+        }
+    }
+
+    let mut connecting_edges = HashSet::new();
+    for i in &boundary_intersections {
+        connecting_edges.extend(graph.intersections[i].edges.clone());
+    }
+    for e in boundary_edges {
+        connecting_edges.remove(e);
+    }
+
+    (
+        boundary_intersections.into_iter().collect(),
+        connecting_edges.into_iter().collect(),
     )
 }

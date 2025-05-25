@@ -8,15 +8,27 @@
     CircleLayer,
     FillLayer,
   } from "svelte-maplibre";
-  import type { LineString, Feature, FeatureCollection, Polygon, Point } from "geojson";
+  import type {
+    LineString,
+    Feature,
+    FeatureCollection,
+    Polygon,
+    Point,
+  } from "geojson";
   import { Popup } from "svelte-utils/map";
   import { PropertiesTable } from "svelte-utils";
 
+  interface FaceProps {
+    boundary_edges: number[];
+    connecting_edges: number[];
+    boundary_intersections: Feature<Point>[];
+    num_buildings: number;
+  }
+
   let edges: FeatureCollection<LineString> = JSON.parse($backend!.getEdges());
-  let faces: FeatureCollection<
-    Polygon,
-    { edges: number[]; num_buildings: number }
-  > = JSON.parse($backend!.getFaces());
+  let faces: FeatureCollection<Polygon, FaceProps> = JSON.parse(
+    $backend!.getFaces(),
+  );
   let buildings: FeatureCollection<Point> = JSON.parse(
     $backend!.getBuildings(),
   );
@@ -25,9 +37,21 @@
   let showEdges = true;
   let showBuildings = false;
 
-  let hoveredFace: Feature<Polygon, { edges: number[] }> | null = null;
-  $: highlightEdges = hoveredFace
-    ? JSON.parse(hoveredFace.properties.edges)
+  let hoveredFace: Feature<Polygon, FaceProps> | null = null;
+
+  $: highlightBoundaryEdges = hoveredFace
+    ? JSON.parse(hoveredFace.properties.boundary_edges)
+    : [];
+
+  $: highlightBoundaryIntersections = {
+    type: "FeatureCollection" as const,
+    features: hoveredFace
+      ? JSON.parse(hoveredFace.properties.boundary_intersections)
+      : [],
+  };
+
+  $: highlightConnectingEdges = hoveredFace
+    ? JSON.parse(hoveredFace.properties.connecting_edges)
     : [];
 </script>
 
@@ -49,8 +73,8 @@
     </label>
 
     {#if hoveredFace}
-      <p>{highlightEdges.length} edges touch this face</p>
-      {#each highlightEdges as e}
+      <p>{highlightBoundaryEdges.length} edges touch this face</p>
+      {#each highlightBoundaryEdges as e}
         <p>{edges.features[e].properties.osm_tags.highway}</p>
       {/each}
     {/if}
@@ -63,7 +87,9 @@
         beforeId="Road labels"
         manageHoverState
         eventsIfTopMost
-        filter={showRealBlocks ? undefined : ["==", ["get", "num_buildings"], 0]}
+        filter={showRealBlocks
+          ? undefined
+          : ["==", ["get", "num_buildings"], 0]}
         paint={{
           "fill-color": [
             "case",
@@ -80,8 +106,6 @@
     <GeoJSON data={buildings}>
       <CircleLayer
         id="buildings"
-        manageHoverState
-        eventsIfTopMost
         paint={{
           "circle-color": "black",
           "circle-radius": 3,
@@ -100,9 +124,14 @@
           "line-width": hoverStateFilter(5, 8),
           "line-color": [
             "case",
-            ["in", ["id"], ["literal", highlightEdges]],
+            ["in", ["id"], ["literal", highlightBoundaryEdges]],
             "red",
-            "black",
+            [
+              "case",
+              ["in", ["id"], ["literal", highlightConnectingEdges]],
+              "yellow",
+              "black",
+            ],
           ],
         }}
         layout={{ visibility: showEdges ? "visible" : "none" }}
@@ -112,6 +141,16 @@
           <PropertiesTable properties={JSON.parse(props.osm_tags)} />
         </Popup>
       </LineLayer>
+    </GeoJSON>
+
+    <GeoJSON data={highlightBoundaryIntersections}>
+      <CircleLayer
+        id="boundary-intersections"
+        paint={{
+          "circle-color": "green",
+          "circle-radius": 3,
+        }}
+      />
     </GeoJSON>
   </div>
 </SplitComponent>
