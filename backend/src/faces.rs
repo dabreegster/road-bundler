@@ -74,10 +74,13 @@ fn split_polygon<'a>(
     shapes
         .into_iter()
         .map(|rings| {
-            let exterior = rings.into_iter().next().expect("shapes must be non-empty");
-            let exterior_line_string = to_geo_linestring(exterior);
-            // We ignore any interiors
-            Polygon::new(exterior_line_string, vec![])
+            let mut linestrings: Vec<LineString> =
+                rings.into_iter().map(to_geo_linestring).collect();
+            if linestrings.is_empty() {
+                panic!("a split shape is empty");
+            }
+            let exterior = linestrings.remove(0);
+            Polygon::new(exterior, linestrings)
         })
         .collect()
 }
@@ -95,6 +98,14 @@ fn to_i_overlay_contour(line_string: &LineString) -> Vec<[f64; 2]> {
 }
 
 fn linestring_along_polygon(ls: &LineString, polygon: &Polygon) -> bool {
+    // If there are holes, treat each of them as its own polygon
+    // TODO Not working in St Mary's Gardens
+    for hole in polygon.interiors() {
+        if linestring_along_polygon(ls, &Polygon::new(hole.clone(), Vec::new())) {
+            return true;
+        }
+    }
+
     let (slice1, slice2) = polygon.slice_near_endpoints(ls);
 
     // TODO Pick the more appropriate slice, using length?
