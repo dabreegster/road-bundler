@@ -8,6 +8,7 @@ extern crate log;
 use std::sync::Once;
 
 use anyhow::Result;
+use geo::{Centroid, Point};
 use geojson::GeoJson;
 use utils::{osm2graph::Graph, Tags};
 use wasm_bindgen::prelude::*;
@@ -15,6 +16,7 @@ use wasm_bindgen::prelude::*;
 use crate::faces::{make_faces, Face};
 
 mod faces;
+mod scrape_buildings;
 mod slice_nearest_boundary;
 
 static START: Once = Once::new();
@@ -23,6 +25,7 @@ static START: Once = Once::new();
 pub struct RoadBundler {
     graph: Graph,
     faces: Vec<Face>,
+    building_centroids: Vec<Point>,
 }
 
 #[wasm_bindgen]
@@ -35,12 +38,23 @@ impl RoadBundler {
             console_log::init_with_level(log::Level::Info).unwrap();
         });
 
-        let mut graph =
-            utils::osm2graph::Graph::new(input_bytes, keep_edge, &mut utils::osm2graph::NullReader)
-                .map_err(err_to_js)?;
+        let mut buildings = scrape_buildings::OsmBuildings::default();
+        let mut graph = utils::osm2graph::Graph::new(input_bytes, keep_edge, &mut buildings)
+            .map_err(err_to_js)?;
         graph.compact_ids();
+
+        let mut building_centroids = Vec::new();
+        for (_, polygon) in &mut buildings.polygons {
+            graph.mercator.to_mercator_in_place(polygon);
+            building_centroids.extend(polygon.centroid());
+        }
+
         let faces = make_faces(&graph);
-        Ok(Self { graph, faces })
+        Ok(Self {
+            graph,
+            faces,
+            building_centroids,
+        })
     }
 
     #[wasm_bindgen(js_name = getEdges)]
@@ -67,6 +81,15 @@ impl RoadBundler {
             let mut f = self.graph.mercator.to_wgs84_gj(&face.polygon);
             f.set_property("edges", face.edges.iter().map(|e| e.0).collect::<Vec<_>>());
             features.push(f);
+        }
+        serde_json::to_string(&GeoJson::from(features)).map_err(err_to_js)
+    }
+
+    #[wasm_bindgen(js_name = getBuildings)]
+    pub fn get_buildings(&self) -> Result<String, JsValue> {
+        let mut features = Vec::new();
+        for pt in &self.building_centroids {
+            features.push(self.graph.mercator.to_wgs84_gj(pt));
         }
         serde_json::to_string(&GeoJson::from(features)).map_err(err_to_js)
     }

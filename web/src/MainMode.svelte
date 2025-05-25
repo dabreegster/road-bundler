@@ -5,15 +5,19 @@
     GeoJSON,
     LineLayer,
     hoverStateFilter,
+    CircleLayer,
     FillLayer,
   } from "svelte-maplibre";
-  import type { LineString, FeatureCollection, Polygon } from "geojson";
+  import type { LineString, FeatureCollection, Polygon, Point } from "geojson";
   import { Popup } from "svelte-utils/map";
   import { PropertiesTable } from "svelte-utils";
 
   let edges: FeatureCollection<LineString> = JSON.parse($backend!.getEdges());
   let faces: FeatureCollection<Polygon, { edges: number[] }> = JSON.parse(
     $backend!.getFaces(),
+  );
+  let buildings: FeatureCollection<Point> = JSON.parse(
+    $backend!.getBuildings(),
   );
 
   let hoveredFace: Feature<Polygon, { edges: number[] }> | null = null;
@@ -44,6 +48,18 @@
           "fill-opacity": hoverStateFilter(0.2, 1),
         }}
         bind:hovered={hoveredFace}
+      />
+    </GeoJSON>
+
+    <GeoJSON data={buildings}>
+      <CircleLayer
+        id="buildings"
+        manageHoverState
+        eventsIfTopMost
+        paint={{
+          "circle-color": "black",
+          "circle-radius": 3,
+        }}
       />
     </GeoJSON>
 
