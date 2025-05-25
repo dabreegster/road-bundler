@@ -21,6 +21,8 @@
     $backend!.getBuildings(),
   );
 
+  let showRealBlocks = false;
+  let showEdges = true;
   let showBuildings = false;
 
   let hoveredFace: Feature<Polygon, { edges: number[] }> | null = null;
@@ -31,6 +33,16 @@
 
 <SplitComponent>
   <div slot="sidebar">
+    <label>
+      <input type="checkbox" bind:checked={showRealBlocks} />
+      Show real blocks
+    </label>
+
+    <label>
+      <input type="checkbox" bind:checked={showEdges} />
+      Show edges
+    </label>
+
     <label>
       <input type="checkbox" bind:checked={showBuildings} />
       Show building centroids
@@ -51,6 +63,7 @@
         beforeId="Road labels"
         manageHoverState
         eventsIfTopMost
+        filter={showRealBlocks ? undefined : ["==", ["get", "num_buildings"], 0]}
         paint={{
           "fill-color": [
             "case",
@@ -92,6 +105,7 @@
             "black",
           ],
         }}
+        layout={{ visibility: showEdges ? "visible" : "none" }}
       >
         <Popup openOn="hover" let:props>
           <h4>Edge {props.edge_id}, Way {props.osm_way}</h4>
