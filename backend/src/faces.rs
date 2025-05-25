@@ -1,5 +1,6 @@
 use geo::{
-    BoundingRect, Coord, Distance, Euclidean, InterpolatableLine, LineString, Point, Polygon, Rect,
+    BoundingRect, Contains, Coord, Distance, Euclidean, InterpolatableLine, LineString, Point,
+    Polygon, Rect,
 };
 use i_overlay::core::fill_rule::FillRule;
 use i_overlay::float::slice::FloatSlice;
@@ -11,9 +12,10 @@ use crate::slice_nearest_boundary::SliceNearEndpoints;
 pub struct Face {
     pub polygon: Polygon,
     pub edges: Vec<EdgeID>,
+    pub num_buildings: usize,
 }
 
-pub fn make_faces(graph: &Graph) -> Vec<Face> {
+pub fn make_faces(graph: &Graph, building_centroids: &Vec<Point>) -> Vec<Face> {
     info!("Splitting {} edges into faces", graph.edges.len());
     let polygons = split_polygon(
         &graph.boundary_polygon,
@@ -42,7 +44,16 @@ pub fn make_faces(graph: &Graph) -> Vec<Face> {
                 }
             })
             .collect();
-        faces.push(Face { polygon, edges });
+        let num_buildings = building_centroids
+            .iter()
+            .filter(|pt| polygon.contains(*pt))
+            .count();
+
+        faces.push(Face {
+            polygon,
+            edges,
+            num_buildings,
+        });
     }
     faces
 }

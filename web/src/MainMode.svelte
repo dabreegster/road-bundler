@@ -8,17 +8,20 @@
     CircleLayer,
     FillLayer,
   } from "svelte-maplibre";
-  import type { LineString, FeatureCollection, Polygon, Point } from "geojson";
+  import type { LineString, Feature, FeatureCollection, Polygon, Point } from "geojson";
   import { Popup } from "svelte-utils/map";
   import { PropertiesTable } from "svelte-utils";
 
   let edges: FeatureCollection<LineString> = JSON.parse($backend!.getEdges());
-  let faces: FeatureCollection<Polygon, { edges: number[] }> = JSON.parse(
-    $backend!.getFaces(),
-  );
+  let faces: FeatureCollection<
+    Polygon,
+    { edges: number[]; num_buildings: number }
+  > = JSON.parse($backend!.getFaces());
   let buildings: FeatureCollection<Point> = JSON.parse(
     $backend!.getBuildings(),
   );
+
+  let showBuildings = false;
 
   let hoveredFace: Feature<Polygon, { edges: number[] }> | null = null;
   $: highlightEdges = hoveredFace
@@ -28,6 +31,11 @@
 
 <SplitComponent>
   <div slot="sidebar">
+    <label>
+      <input type="checkbox" bind:checked={showBuildings} />
+      Show building centroids
+    </label>
+
     {#if hoveredFace}
       <p>{highlightEdges.length} edges touch this face</p>
       {#each highlightEdges as e}
@@ -44,7 +52,12 @@
         manageHoverState
         eventsIfTopMost
         paint={{
-          "fill-color": "cyan",
+          "fill-color": [
+            "case",
+            [">", ["get", "num_buildings"], 0],
+            "purple",
+            "cyan",
+          ],
           "fill-opacity": hoverStateFilter(0.2, 1),
         }}
         bind:hovered={hoveredFace}
@@ -60,6 +73,7 @@
           "circle-color": "black",
           "circle-radius": 3,
         }}
+        layout={{ visibility: showBuildings ? "visible" : "none" }}
       />
     </GeoJSON>
 

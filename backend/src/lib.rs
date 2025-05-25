@@ -49,7 +49,7 @@ impl RoadBundler {
             building_centroids.extend(polygon.centroid());
         }
 
-        let faces = make_faces(&graph);
+        let faces = make_faces(&graph, &building_centroids);
         Ok(Self {
             graph,
             faces,
@@ -80,6 +80,7 @@ impl RoadBundler {
         for face in &self.faces {
             let mut f = self.graph.mercator.to_wgs84_gj(&face.polygon);
             f.set_property("edges", face.edges.iter().map(|e| e.0).collect::<Vec<_>>());
+            f.set_property("num_buildings", face.num_buildings);
             features.push(f);
         }
         serde_json::to_string(&GeoJson::from(features)).map_err(err_to_js)
