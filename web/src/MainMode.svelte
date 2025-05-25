@@ -25,7 +25,10 @@
 <SplitComponent>
   <div slot="sidebar">
     {#if hoveredFace}
-      {highlightEdges.length} edges touch this face: {highlightEdges}
+      <p>{highlightEdges.length} edges touch this face</p>
+      {#each highlightEdges as e}
+        <p>{edges.features[e].properties.osm_tags.highway}</p>
+      {/each}
     {/if}
   </div>
 

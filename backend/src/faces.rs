@@ -1,10 +1,9 @@
-use geo::{Coord, Distance, Euclidean, InterpolatableLine, LineLocatePoint, LineString, Polygon};
+use geo::{Coord, Distance, Euclidean, InterpolatableLine, LineString, Polygon};
 use i_overlay::core::fill_rule::FillRule;
 use i_overlay::float::slice::FloatSlice;
-use utils::{
-    osm2graph::{EdgeID, Graph},
-    LineSplit,
-};
+use utils::osm2graph::{EdgeID, Graph};
+
+use crate::slice_nearest_boundary::SliceNearEndpoints;
 
 pub struct Face {
     pub polygon: Polygon,
@@ -75,20 +74,10 @@ fn to_i_overlay_contour(line_string: &LineString) -> Vec<[f64; 2]> {
 }
 
 fn linestring_along_polygon(ls: &LineString, polygon: &Polygon) -> bool {
-    let Some(slice) = slice_line_to_match(polygon.exterior(), ls) else {
-        return false;
-    };
-    midpoint_distance(ls, &slice) <= 1.0
-}
+    let (slice1, slice2) = polygon.slice_near_endpoints(ls);
 
-// Slice `source` to correspond to `target`, by finding the closest point along `source` matching
-// `target`'s start and end point.
-fn slice_line_to_match(source: &LineString, target: &LineString) -> Option<LineString> {
-    let start = source.line_locate_point(&target.points().next().unwrap())?;
-    let end = source.line_locate_point(&target.points().last().unwrap())?;
-    // Note this uses a copy of an API that hasn't been merged into georust yet. It seems to work
-    // fine in practice.
-    source.line_split_twice(start, end)?.into_second()
+    // TODO Pick the more appropriate slice, using length?
+    midpoint_distance(ls, &slice1) <= 1.0 || midpoint_distance(ls, &slice2) <= 1.0
 }
 
 // Distance in meters between the middle of each linestring. Because ls1 and ls2 might point

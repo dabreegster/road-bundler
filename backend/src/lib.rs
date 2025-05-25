@@ -15,6 +15,7 @@ use wasm_bindgen::prelude::*;
 use crate::faces::{make_faces, Face};
 
 mod faces;
+mod slice_nearest_boundary;
 
 static START: Once = Once::new();
 
@@ -79,5 +80,8 @@ fn keep_edge(tags: &Tags) -> bool {
     if !tags.has("highway") || tags.is("highway", "proposed") || tags.is("area", "yes") {
         return false;
     }
+    /*if tags.is_any("highway", vec!["footway", "cycleway"]) {
+        return false;
+    }*/
     true
 }
