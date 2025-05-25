@@ -55,6 +55,7 @@ dependencies = [
  "geojson",
  "i_overlay",
  "log",
+ "rstar",
  "serde",
  "serde-wasm-bindgen",
  "serde_json",

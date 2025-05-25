@@ -1,6 +1,9 @@
-use geo::{Coord, Distance, Euclidean, InterpolatableLine, LineString, Polygon};
+use geo::{
+    BoundingRect, Coord, Distance, Euclidean, InterpolatableLine, LineString, Point, Polygon, Rect,
+};
 use i_overlay::core::fill_rule::FillRule;
 use i_overlay::float::slice::FloatSlice;
+use rstar::{primitives::GeomWithData, RTree, AABB};
 use utils::osm2graph::{EdgeID, Graph};
 
 use crate::slice_nearest_boundary::SliceNearEndpoints;
@@ -17,16 +20,23 @@ pub fn make_faces(graph: &Graph) -> Vec<Face> {
         graph.edges.values().map(|edge| &edge.linestring),
     );
 
+    info!("Building rtree for {} edges", graph.edges.len());
+    let closest_edge = RTree::bulk_load(
+        graph
+            .edges
+            .values()
+            .map(|e| GeomWithData::new(e.linestring.clone(), e.id))
+            .collect(),
+    );
+
     info!("Matching {} faces with edges", polygons.len());
     let mut faces = Vec::new();
     for polygon in polygons {
-        // TODO Speed up
-        let edges = graph
-            .edges
-            .values()
-            .filter_map(|edge| {
-                if linestring_along_polygon(&edge.linestring, &polygon) {
-                    Some(edge.id)
+        let edges = closest_edge
+            .locate_in_envelope_intersecting(&aabb(&polygon))
+            .filter_map(|obj| {
+                if linestring_along_polygon(obj.geom(), &polygon) {
+                    Some(obj.data)
                 } else {
                     None
                 }
@@ -86,4 +96,12 @@ fn midpoint_distance(ls1: &LineString, ls2: &LineString) -> f64 {
     let pt1 = ls1.point_at_ratio_from_start(&Euclidean, 0.5).unwrap();
     let pt2 = ls2.point_at_ratio_from_start(&Euclidean, 0.5).unwrap();
     Euclidean.distance(pt1, pt2)
+}
+
+fn aabb<G: BoundingRect<f64, Output = Option<Rect<f64>>>>(geom: &G) -> AABB<Point> {
+    let bbox: Rect = geom.bounding_rect().unwrap().into();
+    AABB::from_corners(
+        Point::new(bbox.min().x, bbox.min().y),
+        Point::new(bbox.max().x, bbox.max().y),
+    )
 }
