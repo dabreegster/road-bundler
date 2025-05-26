@@ -5,6 +5,7 @@ extern crate anyhow;
 #[macro_use]
 extern crate log;
 
+use std::collections::BTreeMap;
 use std::sync::Once;
 
 use anyhow::Result;
@@ -13,7 +14,7 @@ use geojson::GeoJson;
 use utils::{osm2graph::Graph, Tags};
 use wasm_bindgen::prelude::*;
 
-use crate::faces::{make_faces, Face};
+use crate::faces::{make_faces, Face, FaceID};
 
 mod faces;
 mod scrape_buildings;
@@ -24,7 +25,7 @@ static START: Once = Once::new();
 #[wasm_bindgen]
 pub struct RoadBundler {
     graph: Graph,
-    faces: Vec<Face>,
+    faces: BTreeMap<FaceID, Face>,
     building_centroids: Vec<Point>,
 }
 
@@ -62,7 +63,6 @@ impl RoadBundler {
         let mut features = Vec::new();
         for (id, edge) in &self.graph.edges {
             let mut f = self.graph.mercator.to_wgs84_gj(&edge.linestring);
-            f.id = Some(geojson::feature::Id::Number(id.0.into()));
             f.set_property("edge_id", id.0);
             f.set_property("osm_way", edge.osm_way.0);
             f.set_property(
@@ -77,8 +77,9 @@ impl RoadBundler {
     #[wasm_bindgen(js_name = getFaces)]
     pub fn get_faces(&self) -> Result<String, JsValue> {
         let mut features = Vec::new();
-        for face in &self.faces {
+        for (id, face) in &self.faces {
             let mut f = self.graph.mercator.to_wgs84_gj(&face.polygon);
+            f.set_property("face_id", id.0);
             f.set_property(
                 "boundary_edges",
                 face.boundary_edges.iter().map(|e| e.0).collect::<Vec<_>>(),
@@ -118,6 +119,11 @@ impl RoadBundler {
             features.push(self.graph.mercator.to_wgs84_gj(pt));
         }
         serde_json::to_string(&GeoJson::from(features)).map_err(err_to_js)
+    }
+
+    #[wasm_bindgen(js_name = collapseToCentroid)]
+    pub fn collapse_to_centroid_wasm(&mut self, id: usize) {
+        self.collapse_to_centroid(FaceID(id));
     }
 }
 

@@ -1,15 +1,18 @@
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 
 use geo::{
-    BoundingRect, Contains, Coord, Distance, Euclidean, InterpolatableLine, LineString, Point,
-    Polygon, Rect,
+    BoundingRect, Centroid, Contains, Coord, Distance, Euclidean, InterpolatableLine, LineString,
+    Point, Polygon, Rect,
 };
 use i_overlay::core::fill_rule::FillRule;
 use i_overlay::float::slice::FloatSlice;
 use rstar::{primitives::GeomWithData, RTree, AABB};
-use utils::osm2graph::{EdgeID, Graph, IntersectionID};
+use utils::osm2graph::{EdgeID, Graph, Intersection, IntersectionID};
 
-use crate::slice_nearest_boundary::SliceNearEndpoints;
+use crate::{slice_nearest_boundary::SliceNearEndpoints, RoadBundler};
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
+pub struct FaceID(pub usize);
 
 pub struct Face {
     pub polygon: Polygon,
@@ -19,7 +22,7 @@ pub struct Face {
     pub num_buildings: usize,
 }
 
-pub fn make_faces(graph: &Graph, building_centroids: &Vec<Point>) -> Vec<Face> {
+pub fn make_faces(graph: &Graph, building_centroids: &Vec<Point>) -> BTreeMap<FaceID, Face> {
     info!("Splitting {} edges into faces", graph.edges.len());
     let polygons = split_polygon(
         &graph.boundary_polygon,
@@ -36,7 +39,7 @@ pub fn make_faces(graph: &Graph, building_centroids: &Vec<Point>) -> Vec<Face> {
     );
 
     info!("Matching {} faces with edges", polygons.len());
-    let mut faces = Vec::new();
+    let mut faces = BTreeMap::new();
     for polygon in polygons {
         let boundary_edges = closest_edge
             .locate_in_envelope_intersecting(&aabb(&polygon))
@@ -54,13 +57,17 @@ pub fn make_faces(graph: &Graph, building_centroids: &Vec<Point>) -> Vec<Face> {
             .filter(|pt| polygon.contains(*pt))
             .count();
 
-        faces.push(Face {
-            polygon,
-            boundary_edges,
-            boundary_intersections,
-            connecting_edges,
-            num_buildings,
-        });
+        let id = FaceID(faces.len());
+        faces.insert(
+            id,
+            Face {
+                polygon,
+                boundary_edges,
+                boundary_intersections,
+                connecting_edges,
+                num_buildings,
+            },
+        );
     }
     faces
 }
@@ -159,4 +166,84 @@ fn find_connections(
         boundary_intersections.into_iter().collect(),
         connecting_edges.into_iter().collect(),
     )
+}
+
+impl RoadBundler {
+    pub fn collapse_to_centroid(&mut self, id: FaceID) {
+        let face = &self.faces[&id];
+
+        for e in &face.boundary_edges {
+            remove_edge(&mut self.graph, *e);
+        }
+
+        // Create a new intersection at the centroid
+        let new_intersection = next_intersection_id(&self.graph);
+        self.graph.intersections.insert(
+            new_intersection,
+            Intersection {
+                id: new_intersection,
+                edges: Vec::new(),
+                // TODO Need a diff graph struct, to allow for mixed synthetic and OSM
+                osm_node: osm_reader::NodeID(0),
+                point: face.polygon.centroid().expect("no face centroid"),
+            },
+        );
+
+        for i in &face.boundary_intersections {
+            // Remove this intersection, asserting there's one surviving edge and connecting it
+            // instead to the new intersection. That edge is in connecting_edges, but we don't need
+            // that list.
+            replace_intersection(&mut self.graph, *i, new_intersection);
+        }
+
+        // Recalculate stuff from the graph
+        // TODO Do we need to compact_ids again?
+        self.faces = make_faces(&self.graph, &self.building_centroids);
+    }
+}
+
+fn remove_edge(graph: &mut Graph, e: EdgeID) {
+    let edge = graph
+        .edges
+        .remove(&e)
+        .expect("can't remove edge that doesn't exist");
+    for i in [edge.src, edge.dst] {
+        let intersection = graph.intersections.get_mut(&i).unwrap();
+        intersection.edges.retain(|x| *x != e);
+        // If edge.src == edge.dst, this is idempotent
+    }
+}
+
+fn replace_intersection(
+    graph: &mut Graph,
+    remove_i: IntersectionID,
+    new_intersection: IntersectionID,
+) {
+    let intersection = graph
+        .intersections
+        .remove(&remove_i)
+        .expect("can't remove intersection that doesn't exist");
+    // There could be 0 of these, fine
+    // Usually there's 1
+    // But there could also be multiple -- a roundabout with two roads jutting off from the same
+    // node. Fine.
+    for surviving_edge in intersection.edges {
+        let edge = graph.edges.get_mut(&surviving_edge).unwrap();
+        if edge.src == remove_i {
+            edge.src = new_intersection;
+            edge.linestring
+                .0
+                .insert(0, graph.intersections[&new_intersection].point.into());
+        }
+        if edge.dst == remove_i {
+            edge.dst = new_intersection;
+            edge.linestring
+                .0
+                .push(graph.intersections[&new_intersection].point.into());
+        }
+    }
+}
+
+fn next_intersection_id(graph: &Graph) -> IntersectionID {
+    IntersectionID(graph.intersections.keys().max().unwrap().0 + 1)
 }

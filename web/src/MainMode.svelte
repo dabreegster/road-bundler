@@ -7,6 +7,7 @@
     hoverStateFilter,
     CircleLayer,
     FillLayer,
+    type LayerClickInfo,
   } from "svelte-maplibre";
   import type {
     LineString,
@@ -19,6 +20,7 @@
   import { PropertiesTable } from "svelte-utils";
 
   interface FaceProps {
+    face_id: number;
     boundary_edges: number[];
     connecting_edges: number[];
     boundary_intersections: Feature<Point>[];
@@ -53,6 +55,23 @@
   $: highlightConnectingEdges = hoveredFace
     ? JSON.parse(hoveredFace.properties.connecting_edges)
     : [];
+
+  function lookupEdge(id: number): Feature<LineString> {
+    for (let f of edges.features) {
+      if (f.properties.edge_id == id) {
+        return f;
+      }
+    }
+    throw new Error(`edge ${id} doesn't exist`);
+  }
+
+  function collapseFace(e: CustomEvent<LayerClickInfo>) {
+    $backend!.collapseToCentroid(e.detail.features[0].properties!.face_id);
+
+    edges = JSON.parse($backend!.getEdges());
+    faces = JSON.parse($backend!.getFaces());
+    hoveredFace = null;
+  }
 </script>
 
 <SplitComponent>
@@ -75,7 +94,7 @@
     {#if hoveredFace}
       <p>{highlightBoundaryEdges.length} edges touch this face</p>
       {#each highlightBoundaryEdges as e}
-        <p>{edges.features[e].properties.osm_tags.highway}</p>
+        <p>{lookupEdge(e).properties.osm_tags.highway}</p>
       {/each}
     {/if}
   </div>
@@ -100,6 +119,8 @@
           "fill-opacity": hoverStateFilter(0.2, 1),
         }}
         bind:hovered={hoveredFace}
+        hoverCursor="pointer"
+        on:click={collapseFace}
       />
     </GeoJSON>
 
@@ -114,7 +135,7 @@
       />
     </GeoJSON>
 
-    <GeoJSON data={edges}>
+    <GeoJSON data={edges} generateId>
       <LineLayer
         id="edges"
         beforeId="Road labels"
