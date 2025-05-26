@@ -145,11 +145,11 @@
           "line-width": hoverStateFilter(5, 8),
           "line-color": [
             "case",
-            ["in", ["id"], ["literal", highlightBoundaryEdges]],
+            ["in", ["get", "edge_id"], ["literal", highlightBoundaryEdges]],
             "red",
             [
               "case",
-              ["in", ["id"], ["literal", highlightConnectingEdges]],
+              ["in", ["get", "edge_id"], ["literal", highlightConnectingEdges]],
               "yellow",
               "black",
             ],

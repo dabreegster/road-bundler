@@ -229,17 +229,31 @@ fn replace_intersection(
     // node. Fine.
     for surviving_edge in intersection.edges {
         let edge = graph.edges.get_mut(&surviving_edge).unwrap();
+        let mut updated = false;
         if edge.src == remove_i {
             edge.src = new_intersection;
             edge.linestring
                 .0
                 .insert(0, graph.intersections[&new_intersection].point.into());
+            updated = true;
         }
         if edge.dst == remove_i {
             edge.dst = new_intersection;
             edge.linestring
                 .0
                 .push(graph.intersections[&new_intersection].point.into());
+            updated = true;
+        }
+
+        if updated {
+            graph
+                .intersections
+                .get_mut(&new_intersection)
+                .unwrap()
+                .edges
+                .push(surviving_edge);
+        } else {
+            panic!("replace_intersection saw inconsistent state about an edge connected to an intersection");
         }
     }
 }
