@@ -826,7 +826,7 @@ checksum = "5a5f39404a5da50712a4c1eecf25e90dd62b613502b7e925fd4e4d19b5c96512"
 [[package]]
 name = "utils"
 version = "0.1.0"
-source = "git+https://github.com/a-b-street/utils#2e724ae0378250f4580dd002c91fce0ed2d3d223"
+source = "git+https://github.com/a-b-street/utils#e345a9cb753717c883b0f300f53486c7a20aeb55"
 dependencies = [
  "anyhow",
  "fast_paths",

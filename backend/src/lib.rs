@@ -24,9 +24,13 @@ static START: Once = Once::new();
 
 #[wasm_bindgen]
 pub struct RoadBundler {
+    original_graph: Graph,
+    building_centroids: Vec<Point>,
+    commands: Vec<Command>,
+
+    // Derived
     graph: Graph,
     faces: BTreeMap<FaceID, Face>,
-    building_centroids: Vec<Point>,
 }
 
 #[wasm_bindgen]
@@ -52,9 +56,12 @@ impl RoadBundler {
 
         let faces = make_faces(&graph, &building_centroids);
         Ok(Self {
+            original_graph: graph.clone(),
+            building_centroids,
+            commands: Vec::new(),
+
             graph,
             faces,
-            building_centroids,
         })
     }
 
@@ -121,10 +128,29 @@ impl RoadBundler {
         serde_json::to_string(&GeoJson::from(features)).map_err(err_to_js)
     }
 
+    #[wasm_bindgen(js_name = undo)]
+    pub fn undo(&mut self) {
+        self.commands.pop();
+        self.graph = self.original_graph.clone();
+        self.faces = make_faces(&self.graph, &self.building_centroids);
+
+        for cmd in self.commands.clone() {
+            self.apply_cmd(cmd);
+        }
+    }
+
     #[wasm_bindgen(js_name = collapseToCentroid)]
     pub fn collapse_to_centroid_wasm(&mut self, id: usize) {
-        self.collapse_to_centroid(FaceID(id));
+        let cmd = Command::CollapseToCentroid(FaceID(id));
+        self.commands.push(cmd);
+        self.apply_cmd(cmd);
     }
+}
+
+// IDs are only meaningful when applied in the correct order
+#[derive(Clone, Copy)]
+pub enum Command {
+    CollapseToCentroid(FaceID),
 }
 
 fn err_to_js<E: std::fmt::Display>(err: E) -> JsValue {

@@ -35,6 +35,8 @@
     $backend!.getBuildings(),
   );
 
+  let undoCount = 0;
+
   let showRealBlocks = false;
   let showEdges = true;
   let showBuildings = false;
@@ -71,11 +73,34 @@
     edges = JSON.parse($backend!.getEdges());
     faces = JSON.parse($backend!.getFaces());
     hoveredFace = null;
+    undoCount = undoCount + 1;
+  }
+
+  function undo() {
+    $backend!.undo();
+
+    edges = JSON.parse($backend!.getEdges());
+    faces = JSON.parse($backend!.getFaces());
+    hoveredFace = null;
+    undoCount = undoCount - 1;
+  }
+
+  function keyDown(e: KeyboardEvent) {
+    if (e.key == "z" && e.ctrlKey && undoCount > 0) {
+      e.stopPropagation();
+      undo();
+    }
   }
 </script>
 
+<svelte:window on:keydown={keyDown} />
+
 <SplitComponent>
   <div slot="sidebar">
+    <button class="secondary" on:click={undo} disabled={undoCount == 0}>
+      Undo ({undoCount})
+    </button>
+
     <label>
       <input type="checkbox" bind:checked={showRealBlocks} />
       Show real blocks

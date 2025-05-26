@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet};
 
 use geo::{
     BoundingRect, Centroid, Contains, Coord, Distance, Euclidean, InterpolatableLine, LineString,
@@ -9,7 +9,7 @@ use i_overlay::float::slice::FloatSlice;
 use rstar::{primitives::GeomWithData, RTree, AABB};
 use utils::osm2graph::{EdgeID, Graph, Intersection, IntersectionID};
 
-use crate::{slice_nearest_boundary::SliceNearEndpoints, RoadBundler};
+use crate::{slice_nearest_boundary::SliceNearEndpoints, Command, RoadBundler};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub struct FaceID(pub usize);
@@ -146,7 +146,7 @@ fn find_connections(
     graph: &Graph,
     boundary_edges: &Vec<EdgeID>,
 ) -> (Vec<IntersectionID>, Vec<EdgeID>) {
-    let mut boundary_intersections = HashSet::new();
+    let mut boundary_intersections = BTreeSet::new();
     for edge in boundary_edges {
         let edge = &graph.edges[edge];
         for i in [edge.src, edge.dst] {
@@ -154,7 +154,7 @@ fn find_connections(
         }
     }
 
-    let mut connecting_edges = HashSet::new();
+    let mut connecting_edges = BTreeSet::new();
     for i in &boundary_intersections {
         connecting_edges.extend(graph.intersections[i].edges.clone());
     }
@@ -169,7 +169,14 @@ fn find_connections(
 }
 
 impl RoadBundler {
-    pub fn collapse_to_centroid(&mut self, id: FaceID) {
+    pub fn apply_cmd(&mut self, cmd: Command) {
+        match cmd {
+            Command::CollapseToCentroid(face) => self.collapse_to_centroid(face),
+        }
+        self.faces = make_faces(&self.graph, &self.building_centroids);
+    }
+
+    fn collapse_to_centroid(&mut self, id: FaceID) {
         let face = &self.faces[&id];
 
         for e in &face.boundary_edges {
@@ -196,9 +203,7 @@ impl RoadBundler {
             replace_intersection(&mut self.graph, *i, new_intersection);
         }
 
-        // Recalculate stuff from the graph
         // TODO Do we need to compact_ids again?
-        self.faces = make_faces(&self.graph, &self.building_centroids);
     }
 }
 
