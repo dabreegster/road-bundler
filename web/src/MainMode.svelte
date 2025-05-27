@@ -34,7 +34,15 @@
     };
   }
 
-  let edges: FeatureCollection<LineString> = JSON.parse($backend!.getEdges());
+  interface EdgeProps {
+    edge_id: number;
+    osm_way: number;
+    osm_tags: Record<string, string>;
+  }
+
+  let edges: FeatureCollection<LineString, EdgeProps> = JSON.parse(
+    $backend!.getEdges(),
+  );
   let faces: FeatureCollection<Polygon, FaceProps> = JSON.parse(
     $backend!.getFaces(),
   );
@@ -49,24 +57,26 @@
   let showEdges = true;
   let showBuildings = false;
 
-  let hoveredFace: Feature<Polygon, FaceProps> | null = null;
+  let tmpHoveredFace: Feature | null = null;
+  // Maplibre breaks nested properties
+  $: hoveredFace = tmpHoveredFace
+    ? faces.features[tmpHoveredFace.id! as number]
+    : (null as Feature<Polygon, FaceProps> | null);
 
   $: highlightBoundaryEdges = hoveredFace
-    ? JSON.parse(hoveredFace.properties.boundary_edges)
+    ? hoveredFace.properties.boundary_edges
     : [];
 
   $: highlightBoundaryIntersections = {
     type: "FeatureCollection" as const,
-    features: hoveredFace
-      ? JSON.parse(hoveredFace.properties.boundary_intersections)
-      : [],
+    features: hoveredFace ? hoveredFace.properties.boundary_intersections : [],
   };
 
   $: highlightConnectingEdges = hoveredFace
-    ? JSON.parse(hoveredFace.properties.connecting_edges)
+    ? hoveredFace.properties.connecting_edges
     : [];
 
-  function lookupEdge(id: number): Feature<LineString> {
+  function lookupEdge(id: number): Feature<LineString, EdgeProps> {
     for (let f of edges.features) {
       if (f.properties.edge_id == id) {
         return f;
@@ -108,13 +118,13 @@
     hoveredFace: Feature<Polygon, FaceProps> | null,
     tool: string,
   ): FeatureCollection {
-    let features = [];
+    let features = [] as Feature[];
     if (
       tool == "dualCarriageway" &&
       hoveredFace &&
       hoveredFace.properties.dual_carriageway
     ) {
-      let dc = JSON.parse(hoveredFace.properties.dual_carriageway);
+      let dc = hoveredFace.properties.dual_carriageway;
       dc.side1.properties = { side: "A" };
       dc.side2.properties = { side: "B" };
       features = [dc.side1, dc.side2];
@@ -165,7 +175,7 @@
         {/each}
       {:else if tool == "dualCarriageway"}
         {#if hoveredFace.properties.dual_carriageway}
-          {@const dc = JSON.parse(hoveredFace.properties.dual_carriageway)}
+          {@const dc = hoveredFace.properties.dual_carriageway}
           <p>{dc.name}</p>
           <p>{dc.bearings.map((b) => Math.round(b)).join(", ")}</p>
         {:else}
@@ -194,7 +204,7 @@
           ],
           "fill-opacity": hoverStateFilter(0.2, 1),
         }}
-        bind:hovered={hoveredFace}
+        bind:hovered={tmpHoveredFace}
         hoverCursor={tool == "explore" ? undefined : "pointer"}
         on:click={collapseFace}
       />
