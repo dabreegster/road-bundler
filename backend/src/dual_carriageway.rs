@@ -77,9 +77,14 @@ impl DualCarriageway {
                 })
                 .collect(),
         );
-        /*if side1_joined.len() != 1 || side2_joined.len() != 2 {
+        if side1_joined.len() != 1 || side2_joined.len() != 1 {
+            info!(
+                "Not a DC because we have {} and {} joined line results",
+                side1_joined.len(),
+                side2_joined.len()
+            );
             return None;
-        }*/
+        }
 
         Some(Self {
             name,

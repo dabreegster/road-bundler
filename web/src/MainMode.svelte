@@ -132,8 +132,7 @@
     if (
       tool == "dualCarriageway" &&
       hoveredFace &&
-      hoveredFace.properties.dual_carriageway &&
-      false
+      hoveredFace.properties.dual_carriageway
     ) {
       let dc = hoveredFace.properties.dual_carriageway;
       dc.side1.properties = { side: "A" };
@@ -277,8 +276,14 @@
         id="dual-carriageway-sides"
         beforeId="Road labels"
         paint={{
-          "line-width": 5,
-          "line-color": ["case", ["==", ["get", "side"], "A"], "blue", "green"],
+          "line-width": 15,
+          "line-opacity": 0.5,
+          "line-color": [
+            "case",
+            ["==", ["get", "side"], "A"],
+            "purple",
+            "blue",
+          ],
         }}
       />
     </GeoJSON>
