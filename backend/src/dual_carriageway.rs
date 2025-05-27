@@ -10,6 +10,9 @@ use crate::Face;
 pub struct DualCarriageway {
     pub name: String,
     pub bearings: Vec<f64>,
+    // TODO EdgeID not serializable
+    pub side1: Vec<usize>,
+    pub side2: Vec<usize>,
 }
 
 impl DualCarriageway {
@@ -38,13 +41,39 @@ impl DualCarriageway {
         }
         let name = names.into_iter().next().unwrap();
 
-        let mut bearings: Vec<f64> = oneways
+        let bearings: Vec<f64> = oneways
             .iter()
             .map(|e| linestring_bearing(&graph.edges[e].linestring))
             .collect();
-        bearings.sort_by_key(|x| (*x * 1000.0) as usize);
 
-        Some(Self { name, bearings })
+        let clusters = crate::kmeans::kmeans_2(
+            &bearings
+                .iter()
+                .map(|b| {
+                    let (y, x) = b.sin_cos();
+                    Coord { x, y }
+                })
+                .collect(),
+            100,
+        );
+        info!("{clusters:?}");
+
+        let mut side1 = Vec::new();
+        let mut side2 = Vec::new();
+        for (e, cluster) in oneways.into_iter().zip(clusters.into_iter()) {
+            if cluster == 0 {
+                side1.push(e.0);
+            } else {
+                side2.push(e.0);
+            }
+        }
+
+        Some(Self {
+            name,
+            bearings,
+            side1,
+            side2,
+        })
     }
 }
 

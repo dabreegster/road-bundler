@@ -29,6 +29,8 @@
     dual_carriageway?: {
       name: string;
       bearings: number[];
+      side1: number[];
+      side2: number[];
     };
   }
 
@@ -145,6 +147,8 @@
           {@const dc = JSON.parse(hoveredFace.properties.dual_carriageway)}
           <p>{dc.name}</p>
           <p>{dc.bearings.map((b) => Math.round(b)).join(", ")}</p>
+          <p>Side1: {dc.side1.join(", ")}</p>
+          <p>Side2: {dc.side2.join(", ")}</p>
         {:else}
           <p>Not a dual carriageway</p>
         {/if}
