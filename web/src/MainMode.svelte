@@ -29,8 +29,8 @@
     dual_carriageway?: {
       name: string;
       bearings: number[];
-      side1: number[];
-      side2: number[];
+      side1: Feature<LineString>;
+      side2: Feature<LineString>;
     };
   }
 
@@ -103,6 +103,27 @@
       undo();
     }
   }
+
+  function showDCSides(
+    hoveredFace: Feature<Polygon, FaceProps> | null,
+    tool: string,
+  ): FeatureCollection {
+    let features = [];
+    if (
+      tool == "dualCarriageway" &&
+      hoveredFace &&
+      hoveredFace.properties.dual_carriageway
+    ) {
+      let dc = JSON.parse(hoveredFace.properties.dual_carriageway);
+      dc.side1.properties = { side: "A" };
+      dc.side2.properties = { side: "B" };
+      features = [dc.side1, dc.side2];
+    }
+    return {
+      type: "FeatureCollection" as const,
+      features,
+    };
+  }
 </script>
 
 <svelte:window on:keydown={keyDown} />
@@ -147,8 +168,6 @@
           {@const dc = JSON.parse(hoveredFace.properties.dual_carriageway)}
           <p>{dc.name}</p>
           <p>{dc.bearings.map((b) => Math.round(b)).join(", ")}</p>
-          <p>Side1: {dc.side1.join(", ")}</p>
-          <p>Side2: {dc.side2.join(", ")}</p>
         {:else}
           <p>Not a dual carriageway</p>
         {/if}
@@ -227,6 +246,17 @@
         paint={{
           "circle-color": "green",
           "circle-radius": 3,
+        }}
+      />
+    </GeoJSON>
+
+    <GeoJSON data={showDCSides(hoveredFace, tool)}>
+      <LineLayer
+        id="dual-carriageway-sides"
+        beforeId="Road labels"
+        paint={{
+          "line-width": 5,
+          "line-color": ["case", ["==", ["get", "side"], "A"], "blue", "green"],
         }}
       />
     </GeoJSON>

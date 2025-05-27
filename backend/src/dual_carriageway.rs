@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
 use geo::{Coord, Line, LineString};
+use geojson::Feature;
 use serde::Serialize;
 use utils::osm2graph::{EdgeID, Graph};
 
@@ -10,9 +11,8 @@ use crate::Face;
 pub struct DualCarriageway {
     pub name: String,
     pub bearings: Vec<f64>,
-    // TODO EdgeID not serializable
-    pub side1: Vec<usize>,
-    pub side2: Vec<usize>,
+    pub side1: Feature,
+    pub side2: Feature,
 }
 
 impl DualCarriageway {
@@ -56,23 +56,34 @@ impl DualCarriageway {
                 .collect(),
             100,
         );
-        info!("{clusters:?}");
 
         let mut side1 = Vec::new();
         let mut side2 = Vec::new();
         for (e, cluster) in oneways.into_iter().zip(clusters.into_iter()) {
             if cluster == 0 {
-                side1.push(e.0);
+                side1.push(crate::join_lines::KeyedLineString {
+                    linestring: graph.edges[&e].linestring.clone(),
+                    ids: vec![(e, true)],
+                });
             } else {
-                side2.push(e.0);
+                side2.push(crate::join_lines::KeyedLineString {
+                    linestring: graph.edges[&e].linestring.clone(),
+                    ids: vec![(e, true)],
+                });
             }
+        }
+
+        let side1_joined = crate::join_lines::collapse_degree_2(side1);
+        let side2_joined = crate::join_lines::collapse_degree_2(side2);
+        if side1_joined.len() != 1 || side2_joined.len() != 2 {
+            return None;
         }
 
         Some(Self {
             name,
             bearings,
-            side1,
-            side2,
+            side1: graph.mercator.to_wgs84_gj(&side1_joined[0].linestring),
+            side2: graph.mercator.to_wgs84_gj(&side2_joined[0].linestring),
         })
     }
 }
