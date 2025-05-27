@@ -25,6 +25,11 @@
     connecting_edges: number[];
     boundary_intersections: Feature<Point>[];
     num_buildings: number;
+
+    dual_carriageway?: {
+      name: string;
+      bearings: number[];
+    };
   }
 
   let edges: FeatureCollection<LineString> = JSON.parse($backend!.getEdges());
@@ -130,10 +135,20 @@
     </label>
 
     {#if hoveredFace}
-      <p>{highlightBoundaryEdges.length} edges touch this face</p>
-      {#each highlightBoundaryEdges as e}
-        <p>{lookupEdge(e).properties.osm_tags.highway}</p>
-      {/each}
+      {#if tool == "explore" || tool == "collapseToCentroid"}
+        <p>{highlightBoundaryEdges.length} edges touch this face</p>
+        {#each highlightBoundaryEdges as e}
+          <p>{lookupEdge(e).properties.osm_tags.highway}</p>
+        {/each}
+      {:else if tool == "dualCarriageway"}
+        {#if hoveredFace.properties.dual_carriageway}
+          {@const dc = JSON.parse(hoveredFace.properties.dual_carriageway)}
+          <p>{dc.name}</p>
+          <p>{dc.bearings.map((b) => Math.round(b)).join(", ")}</p>
+        {:else}
+          <p>Not a dual carriageway</p>
+        {/if}
+      {/if}
     {/if}
   </div>
 

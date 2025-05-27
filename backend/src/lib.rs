@@ -16,6 +16,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::faces::{make_faces, Face, FaceID};
 
+mod dual_carriageway;
 mod faces;
 mod scrape_buildings;
 mod slice_nearest_boundary;
@@ -114,6 +115,9 @@ impl RoadBundler {
                     .collect::<Vec<_>>(),
             );
             f.set_property("num_buildings", face.num_buildings);
+            if let Some(dc) = dual_carriageway::DualCarriageway::maybe_new(&self.graph, face) {
+                f.set_property("dual_carriageway", serde_json::to_value(&dc).unwrap());
+            }
             features.push(f);
         }
         serde_json::to_string(&GeoJson::from(features)).map_err(err_to_js)
