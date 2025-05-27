@@ -161,8 +161,8 @@ fn keep_edge(tags: &Tags) -> bool {
     if !tags.has("highway") || tags.is("highway", "proposed") || tags.is("area", "yes") {
         return false;
     }
-    /*if tags.is_any("highway", vec!["footway", "cycleway"]) {
+    if tags.is_any("highway", vec!["footway", "cycleway"]) {
         return false;
-    }*/
+    }
     true
 }

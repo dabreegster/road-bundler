@@ -35,6 +35,7 @@
     $backend!.getBuildings(),
   );
 
+  let tool: "explore" | "collapseToCentroid" | "dualCarriageway" = "explore";
   let undoCount = 0;
 
   let showRealBlocks = false;
@@ -68,6 +69,10 @@
   }
 
   function collapseFace(e: CustomEvent<LayerClickInfo>) {
+    if (tool != "collapseToCentroid") {
+      return;
+    }
+
     $backend!.collapseToCentroid(e.detail.features[0].properties!.face_id);
 
     edges = JSON.parse($backend!.getEdges());
@@ -97,6 +102,14 @@
 
 <SplitComponent>
   <div slot="sidebar">
+    <select bind:value={tool}>
+      <option value="explore">Just pan around the map</option>
+      <option value="collapseToCentroid">
+        Click to collapse a face to its centroid
+      </option>
+      <option value="dualCarriageway">Hover to debug dual carriageways</option>
+    </select>
+
     <button class="secondary" on:click={undo} disabled={undoCount == 0}>
       Undo ({undoCount})
     </button>
@@ -144,7 +157,7 @@
           "fill-opacity": hoverStateFilter(0.2, 1),
         }}
         bind:hovered={hoveredFace}
-        hoverCursor="pointer"
+        hoverCursor={tool == "explore" ? undefined : "pointer"}
         on:click={collapseFace}
       />
     </GeoJSON>
