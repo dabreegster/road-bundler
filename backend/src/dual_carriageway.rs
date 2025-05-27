@@ -11,6 +11,8 @@ use crate::Face;
 pub struct DualCarriageway {
     pub name: String,
     pub bearings: Vec<f64>,
+    pub side1_edges: Vec<usize>,
+    pub side2_edges: Vec<usize>,
     pub side1: Feature,
     pub side2: Feature,
 }
@@ -51,27 +53,39 @@ impl DualCarriageway {
         let mut side2 = Vec::new();
         for (e, cluster) in oneways.into_iter().zip(clusters.into_iter()) {
             if cluster == 0 {
-                side1.push(crate::join_lines::KeyedLineString {
-                    linestring: graph.edges[&e].linestring.clone(),
-                    ids: vec![(e, true)],
-                });
+                side1.push(e);
             } else {
-                side2.push(crate::join_lines::KeyedLineString {
-                    linestring: graph.edges[&e].linestring.clone(),
-                    ids: vec![(e, true)],
-                });
+                side2.push(e);
             }
         }
 
-        let side1_joined = crate::join_lines::collapse_degree_2(side1);
-        let side2_joined = crate::join_lines::collapse_degree_2(side2);
-        if side1_joined.len() != 1 || side2_joined.len() != 2 {
+        let side1_joined = crate::join_lines::collapse_degree_2(
+            side1
+                .iter()
+                .map(|e| crate::join_lines::KeyedLineString {
+                    linestring: graph.edges[e].linestring.clone(),
+                    ids: vec![(*e, true)],
+                })
+                .collect(),
+        );
+        let side2_joined = crate::join_lines::collapse_degree_2(
+            side2
+                .iter()
+                .map(|e| crate::join_lines::KeyedLineString {
+                    linestring: graph.edges[e].linestring.clone(),
+                    ids: vec![(*e, true)],
+                })
+                .collect(),
+        );
+        /*if side1_joined.len() != 1 || side2_joined.len() != 2 {
             return None;
-        }
+        }*/
 
         Some(Self {
             name,
             bearings,
+            side1_edges: side1.iter().map(|e| e.0).collect(),
+            side2_edges: side2.iter().map(|e| e.0).collect(),
             side1: graph.mercator.to_wgs84_gj(&side1_joined[0].linestring),
             side2: graph.mercator.to_wgs84_gj(&side2_joined[0].linestring),
         })

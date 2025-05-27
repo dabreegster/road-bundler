@@ -29,6 +29,8 @@
     dual_carriageway?: {
       name: string;
       bearings: number[];
+      side1_edges: number[];
+      side2_edges: number[];
       side1: Feature<LineString>;
       side2: Feature<LineString>;
     };
@@ -63,18 +65,26 @@
     ? faces.features[tmpHoveredFace.id! as number]
     : (null as Feature<Polygon, FaceProps> | null);
 
-  $: highlightBoundaryEdges = hoveredFace
-    ? hoveredFace.properties.boundary_edges
-    : [];
+  $: highlightBoundaryEdges = hoveredFace?.properties.boundary_edges || [];
 
   $: highlightBoundaryIntersections = {
     type: "FeatureCollection" as const,
-    features: hoveredFace ? hoveredFace.properties.boundary_intersections : [],
+    features: hoveredFace?.properties.boundary_intersections || [],
   };
 
-  $: highlightConnectingEdges = hoveredFace
-    ? hoveredFace.properties.connecting_edges
-    : [];
+  $: highlightConnectingEdges =
+    tool != "dualCarriageway"
+      ? hoveredFace?.properties.connecting_edges || []
+      : [];
+
+  $: highlightSide1Edges =
+    tool == "dualCarriageway"
+      ? hoveredFace?.properties.dual_carriageway?.side1_edges || []
+      : [];
+  $: highlightSide2Edges =
+    tool == "dualCarriageway"
+      ? hoveredFace?.properties.dual_carriageway?.side2_edges || []
+      : [];
 
   function lookupEdge(id: number): Feature<LineString, EdgeProps> {
     for (let f of edges.features) {
@@ -122,7 +132,8 @@
     if (
       tool == "dualCarriageway" &&
       hoveredFace &&
-      hoveredFace.properties.dual_carriageway
+      hoveredFace.properties.dual_carriageway &&
+      false
     ) {
       let dc = hoveredFace.properties.dual_carriageway;
       dc.side1.properties = { side: "A" };
@@ -231,14 +242,15 @@
           "line-width": hoverStateFilter(5, 8),
           "line-color": [
             "case",
+            ["in", ["get", "edge_id"], ["literal", highlightSide1Edges]],
+            "purple",
+            ["in", ["get", "edge_id"], ["literal", highlightSide2Edges]],
+            "blue",
             ["in", ["get", "edge_id"], ["literal", highlightBoundaryEdges]],
             "red",
-            [
-              "case",
-              ["in", ["get", "edge_id"], ["literal", highlightConnectingEdges]],
-              "yellow",
-              "black",
-            ],
+            ["in", ["get", "edge_id"], ["literal", highlightConnectingEdges]],
+            "yellow",
+            "black",
           ],
         }}
         layout={{ visibility: showEdges ? "visible" : "none" }}
