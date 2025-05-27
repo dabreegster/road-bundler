@@ -19,7 +19,6 @@ use crate::faces::{make_faces, Face, FaceID};
 mod dual_carriageway;
 mod faces;
 mod join_lines;
-mod kmeans;
 mod scrape_buildings;
 mod slice_nearest_boundary;
 

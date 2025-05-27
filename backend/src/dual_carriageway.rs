@@ -98,16 +98,20 @@ fn linestring_bearing(linestring: &LineString) -> f64 {
 }
 
 fn classify_bearings(bearings: &Vec<f64>) -> Vec<usize> {
-    crate::kmeans::kmeans_2(
-        bearings
-            .iter()
-            .map(|b| {
-                let (y, x) = b.sin_cos();
-                Coord { x, y }
-            })
-            .collect(),
-        100,
-    )
+    let min = bearings
+        .iter()
+        .min_by_key(|x| (*x * 100.0) as usize)
+        .unwrap();
+    let max = bearings
+        .iter()
+        .max_by_key(|x| (*x * 100.0) as usize)
+        .unwrap();
+    let range = max - min;
+    let threshold = min + (range / 2.0);
+    bearings
+        .iter()
+        .map(|b| if *b < threshold { 0 } else { 1 })
+        .collect()
 }
 
 #[cfg(test)]
