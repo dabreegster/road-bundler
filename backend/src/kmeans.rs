@@ -2,7 +2,7 @@
 
 use geo::Coord;
 
-pub fn kmeans_2(points: &Vec<Coord>, max_iters: usize) -> Vec<usize> {
+pub fn kmeans_2(points: Vec<Coord>, max_iters: usize) -> Vec<usize> {
     // TODO Start from lowest and highest bearing?
     let mut center1 = points[0];
     let mut center2 = points[1];

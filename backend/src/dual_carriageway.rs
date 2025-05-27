@@ -45,17 +45,7 @@ impl DualCarriageway {
             .iter()
             .map(|e| linestring_bearing(&graph.edges[e].linestring))
             .collect();
-
-        let clusters = crate::kmeans::kmeans_2(
-            &bearings
-                .iter()
-                .map(|b| {
-                    let (y, x) = b.sin_cos();
-                    Coord { x, y }
-                })
-                .collect(),
-            100,
-        );
+        let clusters = classify_bearings(&bearings);
 
         let mut side1 = Vec::new();
         let mut side2 = Vec::new();
@@ -105,4 +95,41 @@ fn linestring_bearing(linestring: &LineString) -> f64 {
     let pt1 = linestring.0[0];
     let pt2 = linestring.0[linestring.0.len() - 1];
     euclidean_bearing(pt1, pt2)
+}
+
+fn classify_bearings(bearings: &Vec<f64>) -> Vec<usize> {
+    crate::kmeans::kmeans_2(
+        bearings
+            .iter()
+            .map(|b| {
+                let (y, x) = b.sin_cos();
+                Coord { x, y }
+            })
+            .collect(),
+        100,
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_classify_bearings() {
+        for (input, expected) in vec![
+            (vec![90, 90, 91, 98, 265, 271], vec![0, 0, 0, 0, 1, 1]),
+            (vec![90, 270], vec![0, 1]),
+            (vec![85, 90, 90, 90, 270, 274], vec![0, 0, 0, 0, 1, 1]),
+            (vec![179, 358, 359, 359, 359, 360], vec![0, 1, 1, 1, 1, 1]),
+            // Wrap around angle case
+            (vec![1, 179, 184, 352, 353, 359], vec![0, 1, 1, 0, 0, 0]),
+        ] {
+            let got1 = classify_bearings(&input.iter().map(|b| *b as f64).collect());
+            // Clusters 0 and 1 are arbitrary; the opposite is also fine
+            let got2: Vec<usize> = got1.iter().map(|c| if *c == 0 { 1 } else { 0 }).collect();
+            if got1 != expected && got2 != expected {
+                panic!("For bearings {input:?},\n  got  {got1:?}\n  want {expected:?}");
+            }
+        }
+    }
 }
