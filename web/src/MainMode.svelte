@@ -102,6 +102,14 @@
       e.stopPropagation();
       undo();
     }
+
+    if (e.key == "1") {
+      tool = "explore";
+    } else if (e.key == "2") {
+      tool = "collapseToCentroid";
+    } else if (e.key == "3") {
+      tool = "dualCarriageway";
+    }
   }
 
   function debugFace(
