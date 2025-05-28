@@ -23,6 +23,7 @@ pub struct Face {
     pub boundary_intersections: Vec<IntersectionID>,
     pub connecting_edges: Vec<EdgeID>,
     pub num_buildings: usize,
+    pub has_parking_aisle: bool,
 }
 
 pub fn make_faces(graph: &Graph, building_centroids: &Vec<Point>) -> BTreeMap<FaceID, Face> {
@@ -59,6 +60,9 @@ pub fn make_faces(graph: &Graph, building_centroids: &Vec<Point>) -> BTreeMap<Fa
             .iter()
             .filter(|pt| polygon.contains(*pt))
             .count();
+        let has_parking_aisle = boundary_edges
+            .iter()
+            .any(|e| graph.edges[e].is_parking_aisle());
 
         let id = FaceID(faces.len());
         faces.insert(
@@ -69,6 +73,7 @@ pub fn make_faces(graph: &Graph, building_centroids: &Vec<Point>) -> BTreeMap<Fa
                 boundary_intersections,
                 connecting_edges,
                 num_buildings,
+                has_parking_aisle,
             },
         );
     }
@@ -265,6 +270,7 @@ impl Face {
         f.set_property("face_id", id.0);
         f.set_property("debug_hover", debug_hover.build());
         f.set_property("num_buildings", self.num_buildings);
+        f.set_property("has_parking_aisle", self.has_parking_aisle);
         if let Some(dc) = crate::dual_carriageway::DualCarriageway::maybe_new(graph, self) {
             f.set_property("dual_carriageway", serde_json::to_value(&dc).unwrap());
         }

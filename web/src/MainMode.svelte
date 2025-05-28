@@ -25,6 +25,7 @@
     face_id: number;
     debug_hover: FeatureCollection;
     num_buildings: number;
+    has_parking_aisle: boolean;
 
     dual_carriageway?: {
       name: string;
@@ -202,7 +203,11 @@
         manageHoverState
         filter={showRealBlocks
           ? undefined
-          : ["==", ["get", "num_buildings"], 0]}
+          : [
+              "all",
+              ["==", ["get", "num_buildings"], 0],
+              ["!", ["get", "has_parking_aisle"]],
+            ]}
         paint={{
           "fill-color": [
             "case",

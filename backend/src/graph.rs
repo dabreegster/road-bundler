@@ -35,6 +35,13 @@ impl Edge {
         }
     }
 
+    pub fn is_parking_aisle(&self) -> bool {
+        match self.provenance {
+            EdgeProvenance::OSM { ref tags, .. } => tags.is("service", "parking_aisle"),
+            EdgeProvenance::Synthetic => false,
+        }
+    }
+
     pub fn get_name(&self) -> Option<&String> {
         match self.provenance {
             EdgeProvenance::OSM { ref tags, .. } => tags.get("name"),
