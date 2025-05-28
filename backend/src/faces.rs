@@ -8,11 +8,10 @@ use geojson::Feature;
 use i_overlay::core::fill_rule::FillRule;
 use i_overlay::float::slice::FloatSlice;
 use rstar::{primitives::GeomWithData, RTree, AABB};
-use utils::Tags;
 
 use crate::{
-    slice_nearest_boundary::SliceNearEndpoints, Command, Debugger, Edge, EdgeID, Graph,
-    Intersection, IntersectionID, RoadBundler,
+    slice_nearest_boundary::SliceNearEndpoints, Command, Debugger, Edge, EdgeID, EdgeProvenance,
+    Graph, Intersection, IntersectionID, IntersectionProvenance, RoadBundler,
 };
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
@@ -195,9 +194,8 @@ impl RoadBundler {
             Intersection {
                 id: new_intersection,
                 edges: Vec::new(),
-                // TODO Need a diff graph struct, to allow for mixed synthetic and OSM
-                osm_node: osm_reader::NodeID(0),
                 point: face.polygon.centroid().expect("no face centroid"),
+                provenance: IntersectionProvenance::Synthetic,
             },
         );
 
@@ -234,9 +232,8 @@ impl RoadBundler {
                 Intersection {
                     id,
                     edges: vec![new_e],
-                    // TODO Need a diff graph struct, to allow for mixed synthetic and OSM
-                    osm_node: osm_reader::NodeID(0),
                     point: pt.into(),
+                    provenance: IntersectionProvenance::Synthetic,
                 },
             );
         }
@@ -246,13 +243,8 @@ impl RoadBundler {
                 id: new_e,
                 src: new_i1,
                 dst: new_i2,
-
-                osm_way: osm_reader::WayID(0),
-                osm_node1: osm_reader::NodeID(0),
-                osm_node2: osm_reader::NodeID(0),
-                osm_tags: Tags::empty(),
-
                 linestring: dc.center_line,
+                provenance: EdgeProvenance::Synthetic,
             },
         );
     }

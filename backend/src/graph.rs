@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use geo::{LineString, Point, Polygon};
 use osm_reader::{NodeID, WayID};
+use serde::Serialize;
 pub use utils::osm2graph::{EdgeID, IntersectionID};
 use utils::{Mercator, Tags};
 
@@ -19,23 +20,51 @@ pub struct Edge {
     pub id: EdgeID,
     pub src: IntersectionID,
     pub dst: IntersectionID,
-
-    pub osm_way: WayID,
-    pub osm_node1: NodeID,
-    pub osm_node2: NodeID,
-    pub osm_tags: Tags,
-
     pub linestring: LineString,
+    pub provenance: EdgeProvenance,
+}
+
+impl Edge {
+    pub fn is_oneway(&self) -> bool {
+        match self.provenance {
+            EdgeProvenance::OSM { ref tags, .. } => tags.is("oneway", "yes"),
+            EdgeProvenance::Synthetic => false,
+        }
+    }
+
+    pub fn get_name(&self) -> Option<&String> {
+        match self.provenance {
+            EdgeProvenance::OSM { ref tags, .. } => tags.get("name"),
+            EdgeProvenance::Synthetic => None,
+        }
+    }
+}
+
+#[derive(Clone, Serialize)]
+pub enum EdgeProvenance {
+    OSM {
+        way: WayID,
+        node1: NodeID,
+        node2: NodeID,
+        tags: Tags,
+    },
+    Synthetic,
 }
 
 #[derive(Clone)]
 pub struct Intersection {
+    #[allow(unused)]
     pub id: IntersectionID,
     pub edges: Vec<EdgeID>,
-
-    pub osm_node: NodeID,
-
     pub point: Point,
+    #[allow(unused)]
+    pub provenance: IntersectionProvenance,
+}
+
+#[derive(Clone, Serialize)]
+pub enum IntersectionProvenance {
+    OSM(NodeID),
+    Synthetic,
 }
 
 impl Graph {
@@ -51,11 +80,13 @@ impl Graph {
                             id: e.id,
                             src: e.src,
                             dst: e.dst,
-                            osm_way: e.osm_way,
-                            osm_node1: e.osm_node1,
-                            osm_node2: e.osm_node2,
-                            osm_tags: e.osm_tags,
                             linestring: e.linestring,
+                            provenance: EdgeProvenance::OSM {
+                                way: e.osm_way,
+                                node1: e.osm_node1,
+                                node2: e.osm_node2,
+                                tags: e.osm_tags,
+                            },
                         },
                     )
                 })
@@ -69,8 +100,8 @@ impl Graph {
                         Intersection {
                             id: i.id,
                             edges: i.edges,
-                            osm_node: i.osm_node,
                             point: i.point,
+                            provenance: IntersectionProvenance::OSM(i.osm_node),
                         },
                     )
                 })

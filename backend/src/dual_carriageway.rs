@@ -22,12 +22,12 @@ impl DualCarriageway {
         let mut oneways: Vec<EdgeID> = face
             .boundary_edges
             .iter()
-            .filter(|e| graph.edges[e].osm_tags.is("oneway", "yes"))
+            .filter(|e| graph.edges[e].is_oneway())
             .cloned()
             .collect();
 
         // Make sure they have a name
-        oneways.retain(|e| graph.edges[e].osm_tags.has("name"));
+        oneways.retain(|e| graph.edges[e].get_name().is_some());
         if oneways.len() < 2 {
             return None;
         }
@@ -35,7 +35,7 @@ impl DualCarriageway {
         // Do they all have the same name?
         let names: HashSet<String> = oneways
             .iter()
-            .map(|e| graph.edges[e].osm_tags.get("name").cloned().unwrap())
+            .map(|e| graph.edges[e].get_name().cloned().unwrap())
             .collect();
         if names.len() != 1 {
             return None;

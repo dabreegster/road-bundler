@@ -35,8 +35,16 @@
 
   interface EdgeProps {
     edge_id: number;
-    osm_way: number;
-    osm_tags: Record<string, string>;
+    provenance:
+      | {
+          OSM: {
+            way: number;
+            node1: number;
+            node2: number;
+            tags: Record<string, string>;
+          };
+        }
+      | "Synthetic";
   }
 
   interface IntersectionProps {
@@ -234,8 +242,13 @@
         layout={{ visibility: showEdges ? "visible" : "none" }}
       >
         <Popup openOn="hover" let:props>
-          <h4>Edge {props.edge_id}, Way {props.osm_way}</h4>
-          <PropertiesTable properties={JSON.parse(props.osm_tags)} />
+          {#if props.provenance == "Synthetic"}
+            <h4>Edge {props.edge_id}, synthetic</h4>
+          {:else}
+            {@const x = JSON.parse(props.provenance)}
+            <h4>Edge {props.edge_id}, Way {x.OSM.way}</h4>
+            <PropertiesTable properties={x.OSM.tags} />
+          {/if}
         </Popup>
       </LineLayer>
     </GeoJSON>

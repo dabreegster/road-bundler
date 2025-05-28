@@ -16,7 +16,9 @@ use wasm_bindgen::prelude::*;
 
 use crate::debugger::Debugger;
 use crate::faces::{make_faces, Face, FaceID};
-use crate::graph::{Edge, EdgeID, Graph, Intersection, IntersectionID};
+use crate::graph::{
+    Edge, EdgeID, EdgeProvenance, Graph, Intersection, IntersectionID, IntersectionProvenance,
+};
 
 mod average_lines;
 mod debugger;
@@ -80,10 +82,9 @@ impl RoadBundler {
         for (id, edge) in &self.graph.edges {
             let mut f = self.graph.mercator.to_wgs84_gj(&edge.linestring);
             f.set_property("edge_id", id.0);
-            f.set_property("osm_way", edge.osm_way.0);
             f.set_property(
-                "osm_tags",
-                serde_json::to_value(&edge.osm_tags).map_err(err_to_js)?,
+                "provenance",
+                serde_json::to_value(&edge.provenance).map_err(err_to_js)?,
             );
             features.push(f);
         }

@@ -474,6 +474,7 @@ dependencies = [
  "anyhow",
  "osmpbf",
  "roxmltree",
+ "serde",
 ]
 
 [[package]]
