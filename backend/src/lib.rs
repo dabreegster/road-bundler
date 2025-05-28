@@ -11,16 +11,18 @@ use std::sync::Once;
 use anyhow::Result;
 use geo::{Centroid, Point};
 use geojson::GeoJson;
-use utils::{osm2graph::Graph, Tags};
+use utils::Tags;
 use wasm_bindgen::prelude::*;
 
 use crate::debugger::Debugger;
 use crate::faces::{make_faces, Face, FaceID};
+use crate::graph::{Edge, EdgeID, Graph, Intersection, IntersectionID};
 
 mod average_lines;
 mod debugger;
 mod dual_carriageway;
 mod faces;
+mod graph;
 mod join_lines;
 mod scrape_buildings;
 mod slice_nearest_boundary;
@@ -50,9 +52,10 @@ impl RoadBundler {
         });
 
         let mut buildings = scrape_buildings::OsmBuildings::default();
-        let mut graph = utils::osm2graph::Graph::new(input_bytes, keep_edge, &mut buildings)
+        let mut osm_graph = utils::osm2graph::Graph::new(input_bytes, keep_edge, &mut buildings)
             .map_err(err_to_js)?;
-        graph.compact_ids();
+        osm_graph.compact_ids();
+        let graph = Graph::new(osm_graph);
 
         let mut building_centroids = Vec::new();
         for (_, polygon) in &mut buildings.polygons {

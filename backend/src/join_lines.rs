@@ -1,7 +1,8 @@
 use std::collections::{BTreeSet, HashMap};
 
 use geo::{Coord, LineString};
-use utils::osm2graph::EdgeID;
+
+use crate::EdgeID;
 
 // TODO For simplicty right now, hardcodes types. Make generic later.
 // TODO Upstream in geo or utils

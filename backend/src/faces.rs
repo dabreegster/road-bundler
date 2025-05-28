@@ -8,12 +8,12 @@ use geojson::Feature;
 use i_overlay::core::fill_rule::FillRule;
 use i_overlay::float::slice::FloatSlice;
 use rstar::{primitives::GeomWithData, RTree, AABB};
-use utils::{
-    osm2graph::{Edge, EdgeID, Graph, Intersection, IntersectionID},
-    Tags,
-};
+use utils::Tags;
 
-use crate::{slice_nearest_boundary::SliceNearEndpoints, Command, Debugger, RoadBundler};
+use crate::{
+    slice_nearest_boundary::SliceNearEndpoints, Command, Debugger, Edge, EdgeID, Graph,
+    Intersection, IntersectionID, RoadBundler,
+};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub struct FaceID(pub usize);

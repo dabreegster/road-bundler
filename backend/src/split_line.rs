@@ -1,7 +1,7 @@
 use geo::{Closest, ClosestPoint, LineLocatePoint, LineString, Point};
-use utils::{osm2graph::Graph, LineSplit};
+use utils::LineSplit;
 
-use crate::Face;
+use crate::{Face, Graph};
 
 pub struct Splits {
     pub split_pts: Vec<Point>,

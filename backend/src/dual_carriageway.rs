@@ -3,9 +3,8 @@ use std::collections::HashSet;
 use geo::{Coord, Line, LineString};
 use geojson::GeoJson;
 use serde::Serialize;
-use utils::osm2graph::{EdgeID, Graph};
 
-use crate::{Debugger, Face};
+use crate::{Debugger, EdgeID, Face, Graph};
 
 // TODO Don't serialize this. Plumb the extra debug info as foreign members?
 #[derive(Serialize)]
