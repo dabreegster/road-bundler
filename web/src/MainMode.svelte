@@ -1,4 +1,5 @@
 <script lang="ts">
+  import DebuggerLayer from "./DebuggerLayer.svelte";
   import { backend } from "./";
   import { SplitComponent } from "svelte-utils/two_column_layout";
   import {
@@ -16,7 +17,7 @@
     Polygon,
     Point,
   } from "geojson";
-  import { constructMatchExpression, Popup } from "svelte-utils/map";
+  import { emptyGeojson, Popup } from "svelte-utils/map";
   import { PropertiesTable } from "svelte-utils";
 
   interface FaceProps {
@@ -29,11 +30,7 @@
     dual_carriageway?: {
       name: string;
       bearings: number[];
-      side1_edges: number[];
-      side2_edges: number[];
-      side1: Feature<LineString>;
-      side2: Feature<LineString>;
-      center_line: Feature<LineString>;
+      debug_hover: FeatureCollection;
     };
   }
 
@@ -78,15 +75,6 @@
       ? hoveredFace?.properties.connecting_edges || []
       : [];
 
-  $: highlightSide1Edges =
-    tool == "dualCarriageway"
-      ? hoveredFace?.properties.dual_carriageway?.side1_edges || []
-      : [];
-  $: highlightSide2Edges =
-    tool == "dualCarriageway"
-      ? hoveredFace?.properties.dual_carriageway?.side2_edges || []
-      : [];
-
   function lookupEdge(id: number): Feature<LineString, EdgeProps> {
     for (let f of edges.features) {
       if (f.properties.edge_id == id) {
@@ -125,26 +113,18 @@
     }
   }
 
-  function showDCSides(
+  function debugDC(
     hoveredFace: Feature<Polygon, FaceProps> | null,
     tool: string,
   ): FeatureCollection {
-    let features = [] as Feature[];
     if (
       tool == "dualCarriageway" &&
       hoveredFace &&
       hoveredFace.properties.dual_carriageway
     ) {
-      let dc = hoveredFace.properties.dual_carriageway;
-      dc.side1.properties = { side: "A" };
-      dc.side2.properties = { side: "B" };
-      dc.center_line.properties = { side: "center" };
-      features = [dc.side1, dc.side2, dc.center_line];
+      return hoveredFace.properties.dual_carriageway.debug_hover;
     }
-    return {
-      type: "FeatureCollection" as const,
-      features,
-    };
+    return emptyGeojson();
   }
 </script>
 
@@ -242,10 +222,6 @@
           "line-width": hoverStateFilter(5, 8),
           "line-color": [
             "case",
-            ["in", ["get", "edge_id"], ["literal", highlightSide1Edges]],
-            "purple",
-            ["in", ["get", "edge_id"], ["literal", highlightSide2Edges]],
-            "blue",
             ["in", ["get", "edge_id"], ["literal", highlightBoundaryEdges]],
             "red",
             ["in", ["get", "edge_id"], ["literal", highlightConnectingEdges]],
@@ -272,20 +248,6 @@
       />
     </GeoJSON>
 
-    <GeoJSON data={showDCSides(hoveredFace, tool)}>
-      <LineLayer
-        id="dual-carriageway-sides"
-        beforeId="Road labels"
-        paint={{
-          "line-width": 15,
-          "line-opacity": 0.5,
-          "line-color": constructMatchExpression(
-            ["get", "side"],
-            { A: "purple", B: "blue", center: "black" },
-            "red",
-          ),
-        }}
-      />
-    </GeoJSON>
+    <DebuggerLayer data={debugDC(hoveredFace, tool)} />
   </div>
 </SplitComponent>

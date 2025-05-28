@@ -1,21 +1,18 @@
 use std::collections::HashSet;
 
 use geo::{Coord, Line, LineString};
-use geojson::Feature;
+use geojson::GeoJson;
 use serde::Serialize;
 use utils::osm2graph::{EdgeID, Graph};
 
-use crate::Face;
+use crate::{Debugger, Face};
 
 #[derive(Serialize)]
 pub struct DualCarriageway {
     pub name: String,
     pub bearings: Vec<f64>,
-    pub side1_edges: Vec<usize>,
-    pub side2_edges: Vec<usize>,
-    pub side1: Feature,
-    pub side2: Feature,
-    pub center_line: Feature,
+
+    pub debug_hover: GeoJson,
 }
 
 impl DualCarriageway {
@@ -92,14 +89,21 @@ impl DualCarriageway {
             &side2_joined[0].linestring,
         )?;
 
+        let mut debug_hover = Debugger::new(graph.mercator.clone());
+        for e in &side1 {
+            debug_hover.add(&graph.edges[e].linestring, "side1 edge", "purple", 5, 1.0);
+        }
+        for e in &side2 {
+            debug_hover.add(&graph.edges[e].linestring, "side2 edge", "blue", 5, 1.0);
+        }
+        debug_hover.add(&side1_joined[0].linestring, "side1 full", "purple", 15, 0.5);
+        debug_hover.add(&side2_joined[0].linestring, "side2 full", "blue", 15, 0.5);
+        debug_hover.add(&center_line, "new center", "black", 10, 1.0);
+
         Some(Self {
             name,
             bearings,
-            side1_edges: side1.iter().map(|e| e.0).collect(),
-            side2_edges: side2.iter().map(|e| e.0).collect(),
-            side1: graph.mercator.to_wgs84_gj(&side1_joined[0].linestring),
-            side2: graph.mercator.to_wgs84_gj(&side2_joined[0].linestring),
-            center_line: graph.mercator.to_wgs84_gj(&center_line),
+            debug_hover: debug_hover.build(),
         })
     }
 }

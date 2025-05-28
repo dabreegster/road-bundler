@@ -14,9 +14,11 @@ use geojson::GeoJson;
 use utils::{osm2graph::Graph, Tags};
 use wasm_bindgen::prelude::*;
 
+use crate::debugger::Debugger;
 use crate::faces::{make_faces, Face, FaceID};
 
 mod average_lines;
+mod debugger;
 mod dual_carriageway;
 mod faces;
 mod join_lines;
