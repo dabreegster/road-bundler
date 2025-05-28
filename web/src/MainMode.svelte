@@ -1,5 +1,6 @@
 <script lang="ts">
   import DebuggerLayer from "./DebuggerLayer.svelte";
+  import DebuggerLegend from "./DebuggerLegend.svelte";
   import { backend } from "./";
   import { SplitComponent } from "svelte-utils/two_column_layout";
   import {
@@ -180,6 +181,9 @@
         {/if}
       {/if}
     {/if}
+
+    <hr />
+    <DebuggerLegend data={debugFace(hoveredFace, tool)} />
   </div>
 
   <div slot="map">

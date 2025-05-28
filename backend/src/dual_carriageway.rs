@@ -101,6 +101,14 @@ impl DualCarriageway {
         debug_hover.line(&side1_joined[0].linestring, "side1 full", "purple", 15, 0.5);
         debug_hover.line(&side2_joined[0].linestring, "side2 full", "blue", 15, 0.5);
         debug_hover.line(&center_line, "new center", "black", 10, 1.0);
+        for e in &face.boundary_edges {
+            if !side1.contains(e) && !side2.contains(e) {
+                debug_hover.line(&graph.edges[e].linestring, "leftover boundary edge", "red", 5, 1.0);
+            }
+        }
+        for e in &face.connecting_edges {
+            debug_hover.line(&graph.edges[e].linestring, "connecting edge", "yellow", 5, 1.0);
+        }
 
         Some(Self {
             name,
