@@ -10,8 +10,8 @@ use i_overlay::float::slice::FloatSlice;
 use rstar::{primitives::GeomWithData, RTree, AABB};
 
 use crate::{
-    slice_nearest_boundary::SliceNearEndpoints, Command, Debugger, Edge, EdgeID, EdgeProvenance,
-    Graph, Intersection, IntersectionID, IntersectionProvenance, RoadBundler,
+    slice_nearest_boundary::SliceNearEndpoints, Debugger, EdgeID, Graph, Intersection,
+    IntersectionID, IntersectionProvenance, RoadBundler,
 };
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
@@ -172,15 +172,7 @@ fn find_connections(
 }
 
 impl RoadBundler {
-    pub fn apply_cmd(&mut self, cmd: Command) {
-        match cmd {
-            Command::CollapseToCentroid(face) => self.collapse_to_centroid(face),
-            Command::CollapseDualCarriageway(face) => self.collapse_dual_carriageway(face),
-        }
-        self.faces = make_faces(&self.graph, &self.building_centroids);
-    }
-
-    fn collapse_to_centroid(&mut self, id: FaceID) {
+    pub fn collapse_to_centroid(&mut self, id: FaceID) {
         let face = &self.faces[&id];
 
         for e in &face.boundary_edges {
@@ -205,46 +197,6 @@ impl RoadBundler {
             // that list.
             replace_intersection(&mut self.graph, *i, new_intersection);
         }
-    }
-
-    fn collapse_dual_carriageway(&mut self, id: FaceID) {
-        let face = &self.faces[&id];
-        let dc = crate::dual_carriageway::DualCarriageway::maybe_new(&self.graph, face)
-            .expect("collapse_dual_carriageway on something that isn't a DC");
-
-        // Remove all the boundary_edges
-        for e in &face.boundary_edges {
-            self.graph.remove_edge(*e);
-        }
-
-        // Create the new center-line, unsplit and disconnected
-        let new_e = self.graph.new_edge_id();
-        let new_i1 = self.graph.new_intersection_id();
-        let new_i2 = self.graph.new_intersection_id();
-        for (id, pt) in vec![
-            (new_i1, dc.center_line.0[0]),
-            (new_i2, dc.center_line.0[dc.center_line.0.len() - 1]),
-        ] {
-            self.graph.intersections.insert(
-                id,
-                Intersection {
-                    id,
-                    edges: vec![new_e],
-                    point: pt.into(),
-                    provenance: IntersectionProvenance::Synthetic,
-                },
-            );
-        }
-        self.graph.edges.insert(
-            new_e,
-            Edge {
-                id: new_e,
-                src: new_i1,
-                dst: new_i2,
-                linestring: dc.center_line,
-                provenance: EdgeProvenance::Synthetic,
-            },
-        );
     }
 }
 

@@ -4,8 +4,9 @@ use utils::LineSplit;
 use crate::{Face, Graph};
 
 pub struct Splits {
-    pub split_pts: Vec<Point>,
+    // lines[i] uses new_endpts[i] and [i + 1]
     pub lines: Vec<LineString>,
+    pub new_endpts: Vec<Point>,
 }
 
 pub fn split_center(graph: &Graph, center_line: &LineString, face: &Face) -> Splits {
@@ -13,7 +14,6 @@ pub fn split_center(graph: &Graph, center_line: &LineString, face: &Face) -> Spl
     // properly in the middle, and connections (maybe resolved by first merging the faces) will be
     // at 0 or 1.
     let mut split_fractions = Vec::new();
-    let mut split_pts = Vec::new();
     for e in &face.connecting_edges {
         let edge = &graph.edges[e];
         let i = if face.boundary_intersections.contains(&edge.src) {
@@ -30,7 +30,6 @@ pub fn split_center(graph: &Graph, center_line: &LineString, face: &Face) -> Spl
                 panic!("closest_point for split_center is Indeterminate");
             }
         };
-        split_pts.push(split_pt);
 
         split_fractions.extend(center_line.line_locate_point(&split_pt));
     }
@@ -46,6 +45,17 @@ pub fn split_center(graph: &Graph, center_line: &LineString, face: &Face) -> Spl
         "split_fractions {split_fractions:?} yields {} lines",
         lines.len()
     );
+    let new_endpts = linestring_endpoints(&lines);
 
-    Splits { split_pts, lines }
+    Splits { lines, new_endpts }
+}
+
+fn linestring_endpoints(lines: &Vec<LineString>) -> Vec<Point> {
+    let mut pts = Vec::new();
+    for line in lines {
+        pts.push(line.0[0].into());
+    }
+    let last_line = lines.last().unwrap();
+    pts.push(last_line.0[last_line.0.len() - 1].into());
+    pts
 }

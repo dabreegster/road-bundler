@@ -141,4 +141,43 @@ impl Graph {
             // If edge.src == edge.dst, this is idempotent
         }
     }
+
+    pub fn create_new_edges(&mut self, linestrings: Vec<LineString>, endpoints: Vec<Point>) {
+        // Assumes linestrings all point in the correct way
+        // Assumes endpoints comes from linestring_endpoints (TODO maybe just call it here)
+        assert_eq!(linestrings.len() + 1, endpoints.len());
+
+        let mut new_intersections = Vec::new();
+        for point in endpoints {
+            let id = self.new_intersection_id();
+            self.intersections.insert(
+                id,
+                Intersection {
+                    id,
+                    edges: vec![],
+                    point,
+                    provenance: IntersectionProvenance::Synthetic,
+                },
+            );
+            new_intersections.push(id);
+        }
+
+        for (idx, linestring) in linestrings.into_iter().enumerate() {
+            let id = self.new_edge_id();
+            let src = new_intersections[idx];
+            let dst = new_intersections[idx + 1];
+            self.edges.insert(
+                id,
+                Edge {
+                    id,
+                    src,
+                    dst,
+                    linestring,
+                    provenance: EdgeProvenance::Synthetic,
+                },
+            );
+            self.intersections.get_mut(&src).unwrap().edges.push(id);
+            self.intersections.get_mut(&dst).unwrap().edges.push(id);
+        }
+    }
 }

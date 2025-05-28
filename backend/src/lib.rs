@@ -16,9 +16,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::debugger::Debugger;
 use crate::faces::{make_faces, Face, FaceID};
-use crate::graph::{
-    Edge, EdgeID, EdgeProvenance, Graph, Intersection, IntersectionID, IntersectionProvenance,
-};
+use crate::graph::{EdgeID, Graph, Intersection, IntersectionID, IntersectionProvenance};
 
 mod average_lines;
 mod debugger;
@@ -143,6 +141,16 @@ impl RoadBundler {
         let cmd = Command::CollapseDualCarriageway(FaceID(id));
         self.commands.push(cmd);
         self.apply_cmd(cmd);
+    }
+}
+
+impl RoadBundler {
+    pub fn apply_cmd(&mut self, cmd: Command) {
+        match cmd {
+            Command::CollapseToCentroid(face) => self.collapse_to_centroid(face),
+            Command::CollapseDualCarriageway(face) => self.collapse_dual_carriageway(face),
+        }
+        self.faces = make_faces(&self.graph, &self.building_centroids);
     }
 }
 

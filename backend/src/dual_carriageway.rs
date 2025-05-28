@@ -4,7 +4,8 @@ use geo::{Coord, Line, LineString};
 use geojson::GeoJson;
 use serde::Serialize;
 
-use crate::{Debugger, EdgeID, Face, Graph};
+use crate::split_line::Splits;
+use crate::{Debugger, EdgeID, Face, FaceID, Graph, RoadBundler};
 
 // TODO Don't serialize this. Plumb the extra debug info as foreign members?
 #[derive(Serialize)]
@@ -12,6 +13,8 @@ pub struct DualCarriageway {
     pub name: String,
     pub bearings: Vec<f64>,
     pub center_line: LineString,
+    #[serde(skip)]
+    pub splits: Splits,
 
     pub debug_hover: GeoJson,
 }
@@ -121,14 +124,15 @@ impl DualCarriageway {
                 1.0,
             );
         }
-        for pt in splits.split_pts {
-            debug_hover.circle(pt, "split", "green", 5);
+        for pt in &splits.new_endpts {
+            debug_hover.circle(*pt, "split", "green", 5);
         }
 
         Some(Self {
             name,
             bearings,
             center_line,
+            splits,
             debug_hover: debug_hover.build(),
         })
     }
@@ -168,6 +172,23 @@ fn classify_bearings(bearings: &Vec<f64>) -> Vec<usize> {
         .iter()
         .map(|b| if *b < threshold { 0 } else { 1 })
         .collect()
+}
+
+impl RoadBundler {
+    pub fn collapse_dual_carriageway(&mut self, id: FaceID) {
+        let face = &self.faces[&id];
+        let dc = crate::dual_carriageway::DualCarriageway::maybe_new(&self.graph, face)
+            .expect("collapse_dual_carriageway on something that isn't a DC");
+
+        // Remove all the boundary_edges
+        for e in &face.boundary_edges {
+            self.graph.remove_edge(*e);
+        }
+
+        // Create the new split center-lines, with new intersections
+        self.graph
+            .create_new_edges(dc.splits.lines, dc.splits.new_endpts);
+    }
 }
 
 #[cfg(test)]
