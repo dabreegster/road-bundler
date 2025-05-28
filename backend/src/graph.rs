@@ -13,6 +13,9 @@ pub struct Graph {
     // All geometry is stored in world-space
     pub mercator: Mercator,
     pub boundary_polygon: Polygon,
+
+    intersection_id_counter: usize,
+    edge_id_counter: usize,
 }
 
 #[derive(Clone)]
@@ -69,6 +72,9 @@ pub enum IntersectionProvenance {
 
 impl Graph {
     pub fn new(osm_graph: utils::osm2graph::Graph) -> Self {
+        let intersection_id_counter = osm_graph.intersections.keys().max().unwrap().0 + 1;
+        let edge_id_counter = osm_graph.edges.keys().max().unwrap().0 + 1;
+
         Self {
             edges: osm_graph
                 .edges
@@ -108,6 +114,31 @@ impl Graph {
                 .collect(),
             mercator: osm_graph.mercator,
             boundary_polygon: osm_graph.boundary_polygon,
+
+            intersection_id_counter,
+            edge_id_counter,
+        }
+    }
+
+    pub fn new_intersection_id(&mut self) -> IntersectionID {
+        self.intersection_id_counter += 1;
+        IntersectionID(self.intersection_id_counter)
+    }
+
+    pub fn new_edge_id(&mut self) -> EdgeID {
+        self.edge_id_counter += 1;
+        EdgeID(self.edge_id_counter)
+    }
+
+    pub fn remove_edge(&mut self, e: EdgeID) {
+        let edge = self
+            .edges
+            .remove(&e)
+            .expect("can't remove edge that doesn't exist");
+        for i in [edge.src, edge.dst] {
+            let intersection = self.intersections.get_mut(&i).unwrap();
+            intersection.edges.retain(|x| *x != e);
+            // If edge.src == edge.dst, this is idempotent
         }
     }
 }

@@ -184,11 +184,11 @@ impl RoadBundler {
         let face = &self.faces[&id];
 
         for e in &face.boundary_edges {
-            remove_edge(&mut self.graph, *e);
+            self.graph.remove_edge(*e);
         }
 
         // Create a new intersection at the centroid
-        let new_intersection = next_intersection_id(&self.graph);
+        let new_intersection = self.graph.new_intersection_id();
         self.graph.intersections.insert(
             new_intersection,
             Intersection {
@@ -205,8 +205,6 @@ impl RoadBundler {
             // that list.
             replace_intersection(&mut self.graph, *i, new_intersection);
         }
-
-        // TODO Do we need to compact_ids again?
     }
 
     fn collapse_dual_carriageway(&mut self, id: FaceID) {
@@ -216,13 +214,13 @@ impl RoadBundler {
 
         // Remove all the boundary_edges
         for e in &face.boundary_edges {
-            remove_edge(&mut self.graph, *e);
+            self.graph.remove_edge(*e);
         }
 
         // Create the new center-line, unsplit and disconnected
-        let new_e = next_edge_id(&self.graph);
-        let new_i1 = next_intersection_id(&self.graph);
-        let new_i2 = IntersectionID(new_i1.0 + 1);
+        let new_e = self.graph.new_edge_id();
+        let new_i1 = self.graph.new_intersection_id();
+        let new_i2 = self.graph.new_intersection_id();
         for (id, pt) in vec![
             (new_i1, dc.center_line.0[0]),
             (new_i2, dc.center_line.0[dc.center_line.0.len() - 1]),
@@ -250,18 +248,6 @@ impl RoadBundler {
     }
 }
 
-fn remove_edge(graph: &mut Graph, e: EdgeID) {
-    let edge = graph
-        .edges
-        .remove(&e)
-        .expect("can't remove edge that doesn't exist");
-    for i in [edge.src, edge.dst] {
-        let intersection = graph.intersections.get_mut(&i).unwrap();
-        intersection.edges.retain(|x| *x != e);
-        // If edge.src == edge.dst, this is idempotent
-    }
-}
-
 fn replace_intersection(
     graph: &mut Graph,
     remove_i: IntersectionID,
@@ -280,6 +266,7 @@ fn replace_intersection(
         let mut updated = false;
         if edge.src == remove_i {
             edge.src = new_intersection;
+            // TODO In provenance, should we mark modified cases?
             edge.linestring
                 .0
                 .insert(0, graph.intersections[&new_intersection].point.into());
@@ -304,14 +291,6 @@ fn replace_intersection(
             panic!("replace_intersection saw inconsistent state about an edge connected to an intersection");
         }
     }
-}
-
-fn next_intersection_id(graph: &Graph) -> IntersectionID {
-    IntersectionID(graph.intersections.keys().max().unwrap().0 + 1)
-}
-
-fn next_edge_id(graph: &Graph) -> EdgeID {
-    EdgeID(graph.edges.keys().max().unwrap().0 + 1)
 }
 
 impl Face {
