@@ -142,7 +142,12 @@ impl Graph {
         }
     }
 
-    pub fn create_new_edges(&mut self, linestrings: Vec<LineString>, endpoints: Vec<Point>) {
+    /// Returns the new intersections created
+    pub fn create_new_linked_edges(
+        &mut self,
+        linestrings: Vec<LineString>,
+        endpoints: Vec<Point>,
+    ) -> Vec<IntersectionID> {
         // Assumes linestrings all point in the correct way
         // Assumes endpoints comes from linestring_endpoints (TODO maybe just call it here)
         assert_eq!(linestrings.len() + 1, endpoints.len());
@@ -163,21 +168,35 @@ impl Graph {
         }
 
         for (idx, linestring) in linestrings.into_iter().enumerate() {
-            let id = self.new_edge_id();
-            let src = new_intersections[idx];
-            let dst = new_intersections[idx + 1];
-            self.edges.insert(
-                id,
-                Edge {
-                    id,
-                    src,
-                    dst,
-                    linestring,
-                    provenance: EdgeProvenance::Synthetic,
-                },
+            self.create_new_edge(
+                linestring,
+                new_intersections[idx],
+                new_intersections[idx + 1],
             );
-            self.intersections.get_mut(&src).unwrap().edges.push(id);
-            self.intersections.get_mut(&dst).unwrap().edges.push(id);
         }
+
+        new_intersections
+    }
+
+    /// Trusts the linestring to go from `src` to `dst`
+    pub fn create_new_edge(
+        &mut self,
+        linestring: LineString,
+        src: IntersectionID,
+        dst: IntersectionID,
+    ) {
+        let id = self.new_edge_id();
+        self.edges.insert(
+            id,
+            Edge {
+                id,
+                src,
+                dst,
+                linestring,
+                provenance: EdgeProvenance::Synthetic,
+            },
+        );
+        self.intersections.get_mut(&src).unwrap().edges.push(id);
+        self.intersections.get_mut(&dst).unwrap().edges.push(id);
     }
 }

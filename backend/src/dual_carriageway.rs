@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use geo::{Coord, Line, LineString};
+use geo::{Coord, Distance, Euclidean, Line, LineString};
 use geojson::GeoJson;
 use serde::Serialize;
 
@@ -186,8 +186,39 @@ impl RoadBundler {
         }
 
         // Create the new split center-lines, with new intersections
-        self.graph
-            .create_new_edges(dc.splits.lines, dc.splits.new_endpts);
+        let new_intersections = self
+            .graph
+            .create_new_linked_edges(dc.splits.lines, dc.splits.new_endpts);
+
+        // Re-attach every connecting edge to the nearest new intersection
+        // (we could maybe preserve more info to do this directly?)
+        for e in &face.connecting_edges {
+            let edge = &self.graph.edges[e];
+            let existing_i = if face.boundary_intersections.contains(&edge.src) {
+                edge.src
+            } else {
+                edge.dst
+            };
+            let existing_pt = self.graph.intersections[&existing_i].point;
+
+            let closest_new_i = *new_intersections
+                .iter()
+                .min_by_key(|i| {
+                    (10e6 * Euclidean.distance(existing_pt, self.graph.intersections[i].point))
+                        as usize
+                })
+                .unwrap();
+            self.graph.create_new_edge(
+                LineString::new(vec![
+                    existing_pt.into(),
+                    self.graph.intersections[&closest_new_i].point.into(),
+                ]),
+                existing_i,
+                closest_new_i,
+            );
+        }
+
+        // TODO Remove orphaned intersections
     }
 }
 
