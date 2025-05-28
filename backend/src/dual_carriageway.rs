@@ -91,14 +91,14 @@ impl DualCarriageway {
 
         let mut debug_hover = Debugger::new(graph.mercator.clone());
         for e in &side1 {
-            debug_hover.add(&graph.edges[e].linestring, "side1 edge", "purple", 5, 1.0);
+            debug_hover.line(&graph.edges[e].linestring, "side1 edge", "purple", 5, 1.0);
         }
         for e in &side2 {
-            debug_hover.add(&graph.edges[e].linestring, "side2 edge", "blue", 5, 1.0);
+            debug_hover.line(&graph.edges[e].linestring, "side2 edge", "blue", 5, 1.0);
         }
-        debug_hover.add(&side1_joined[0].linestring, "side1 full", "purple", 15, 0.5);
-        debug_hover.add(&side2_joined[0].linestring, "side2 full", "blue", 15, 0.5);
-        debug_hover.add(&center_line, "new center", "black", 10, 1.0);
+        debug_hover.line(&side1_joined[0].linestring, "side1 full", "purple", 15, 0.5);
+        debug_hover.line(&side2_joined[0].linestring, "side2 full", "blue", 15, 0.5);
+        debug_hover.line(&center_line, "new center", "black", 10, 1.0);
 
         Some(Self {
             name,

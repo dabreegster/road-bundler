@@ -4,12 +4,13 @@ use geo::{
     BoundingRect, Centroid, Contains, Coord, Distance, Euclidean, InterpolatableLine, LineString,
     Point, Polygon, Rect,
 };
+use geojson::Feature;
 use i_overlay::core::fill_rule::FillRule;
 use i_overlay::float::slice::FloatSlice;
 use rstar::{primitives::GeomWithData, RTree, AABB};
 use utils::osm2graph::{EdgeID, Graph, Intersection, IntersectionID};
 
-use crate::{slice_nearest_boundary::SliceNearEndpoints, Command, RoadBundler};
+use crate::{slice_nearest_boundary::SliceNearEndpoints, Command, Debugger, RoadBundler};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub struct FaceID(pub usize);
@@ -265,4 +266,39 @@ fn replace_intersection(
 
 fn next_intersection_id(graph: &Graph) -> IntersectionID {
     IntersectionID(graph.intersections.keys().max().unwrap().0 + 1)
+}
+
+impl Face {
+    pub fn to_gj(&self, graph: &Graph, id: FaceID) -> Feature {
+        let mut debug_hover = Debugger::new(graph.mercator.clone());
+        for e in &self.boundary_edges {
+            debug_hover.line(&graph.edges[e].linestring, "boundary edge", "red", 5, 1.0);
+        }
+        for e in &self.connecting_edges {
+            debug_hover.line(
+                &graph.edges[e].linestring,
+                "connecting edge",
+                "yellow",
+                5,
+                1.0,
+            );
+        }
+        for i in &self.boundary_intersections {
+            debug_hover.circle(
+                graph.intersections[i].point,
+                "boundary intersection",
+                "green",
+                3,
+            );
+        }
+
+        let mut f = graph.mercator.to_wgs84_gj(&self.polygon);
+        f.set_property("face_id", id.0);
+        f.set_property("debug_hover", debug_hover.build());
+        f.set_property("num_buildings", self.num_buildings);
+        if let Some(dc) = crate::dual_carriageway::DualCarriageway::maybe_new(graph, self) {
+            f.set_property("dual_carriageway", serde_json::to_value(&dc).unwrap());
+        }
+        f
+    }
 }

@@ -90,39 +90,7 @@ impl RoadBundler {
     pub fn get_faces(&self) -> Result<String, JsValue> {
         let mut features = Vec::new();
         for (id, face) in &self.faces {
-            let mut f = self.graph.mercator.to_wgs84_gj(&face.polygon);
-            f.set_property("face_id", id.0);
-            f.set_property(
-                "boundary_edges",
-                face.boundary_edges.iter().map(|e| e.0).collect::<Vec<_>>(),
-            );
-            f.set_property(
-                "boundary_intersections",
-                face.boundary_intersections
-                    .iter()
-                    .map(|i| {
-                        serde_json::to_value(
-                            &self
-                                .graph
-                                .mercator
-                                .to_wgs84_gj(&Point::from(self.graph.intersections[i].point)),
-                        )
-                        .unwrap()
-                    })
-                    .collect::<Vec<_>>(),
-            );
-            f.set_property(
-                "connecting_edges",
-                face.connecting_edges
-                    .iter()
-                    .map(|e| e.0)
-                    .collect::<Vec<_>>(),
-            );
-            f.set_property("num_buildings", face.num_buildings);
-            if let Some(dc) = dual_carriageway::DualCarriageway::maybe_new(&self.graph, face) {
-                f.set_property("dual_carriageway", serde_json::to_value(&dc).unwrap());
-            }
-            features.push(f);
+            features.push(face.to_gj(&self.graph, *id));
         }
         serde_json::to_string(&GeoJson::from(features)).map_err(err_to_js)
     }

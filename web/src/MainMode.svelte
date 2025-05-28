@@ -22,9 +22,7 @@
 
   interface FaceProps {
     face_id: number;
-    boundary_edges: number[];
-    connecting_edges: number[];
-    boundary_intersections: Feature<Point>[];
+    debug_hover: FeatureCollection;
     num_buildings: number;
 
     dual_carriageway?: {
@@ -63,27 +61,6 @@
     ? faces.features[tmpHoveredFace.id! as number]
     : (null as Feature<Polygon, FaceProps> | null);
 
-  $: highlightBoundaryEdges = hoveredFace?.properties.boundary_edges || [];
-
-  $: highlightBoundaryIntersections = {
-    type: "FeatureCollection" as const,
-    features: hoveredFace?.properties.boundary_intersections || [],
-  };
-
-  $: highlightConnectingEdges =
-    tool != "dualCarriageway"
-      ? hoveredFace?.properties.connecting_edges || []
-      : [];
-
-  function lookupEdge(id: number): Feature<LineString, EdgeProps> {
-    for (let f of edges.features) {
-      if (f.properties.edge_id == id) {
-        return f;
-      }
-    }
-    throw new Error(`edge ${id} doesn't exist`);
-  }
-
   function collapseFace(e: CustomEvent<LayerClickInfo>) {
     if (tool != "collapseToCentroid") {
       return;
@@ -113,10 +90,14 @@
     }
   }
 
-  function debugDC(
+  function debugFace(
     hoveredFace: Feature<Polygon, FaceProps> | null,
     tool: string,
   ): FeatureCollection {
+    if (tool != "dualCarriageway" && hoveredFace) {
+      return hoveredFace.properties.debug_hover;
+    }
+
     if (
       tool == "dualCarriageway" &&
       hoveredFace &&
@@ -160,12 +141,7 @@
     </label>
 
     {#if hoveredFace}
-      {#if tool == "explore" || tool == "collapseToCentroid"}
-        <p>{highlightBoundaryEdges.length} edges touch this face</p>
-        {#each highlightBoundaryEdges as e}
-          <p>{lookupEdge(e).properties.osm_tags.highway}</p>
-        {/each}
-      {:else if tool == "dualCarriageway"}
+      {#if tool == "dualCarriageway"}
         {#if hoveredFace.properties.dual_carriageway}
           {@const dc = hoveredFace.properties.dual_carriageway}
           <p>{dc.name}</p>
@@ -220,14 +196,7 @@
         eventsIfTopMost
         paint={{
           "line-width": hoverStateFilter(5, 8),
-          "line-color": [
-            "case",
-            ["in", ["get", "edge_id"], ["literal", highlightBoundaryEdges]],
-            "red",
-            ["in", ["get", "edge_id"], ["literal", highlightConnectingEdges]],
-            "yellow",
-            "black",
-          ],
+          "line-color": "black",
         }}
         layout={{ visibility: showEdges ? "visible" : "none" }}
       >
@@ -238,16 +207,6 @@
       </LineLayer>
     </GeoJSON>
 
-    <GeoJSON data={highlightBoundaryIntersections}>
-      <CircleLayer
-        id="boundary-intersections"
-        paint={{
-          "circle-color": "green",
-          "circle-radius": 3,
-        }}
-      />
-    </GeoJSON>
-
-    <DebuggerLayer data={debugDC(hoveredFace, tool)} />
+    <DebuggerLayer data={debugFace(hoveredFace, tool)} />
   </div>
 </SplitComponent>
