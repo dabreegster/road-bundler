@@ -224,7 +224,7 @@ impl RoadBundler {
         // Create the new center-line, unsplit and disconnected
         let new_e = next_edge_id(&self.graph);
         let new_i1 = next_intersection_id(&self.graph);
-        let new_i2 = next_intersection_id(&self.graph);
+        let new_i2 = IntersectionID(new_i1.0 + 1);
         for (id, pt) in vec![
             (new_i1, dc.center_line.0[0]),
             (new_i2, dc.center_line.0[dc.center_line.0.len() - 1]),
@@ -335,14 +335,6 @@ impl Face {
                 "yellow",
                 5,
                 1.0,
-            );
-        }
-        for i in &self.boundary_intersections {
-            debug_hover.circle(
-                graph.intersections[i].point,
-                "boundary intersection",
-                "green",
-                5,
             );
         }
 

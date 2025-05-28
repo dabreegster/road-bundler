@@ -38,8 +38,15 @@
     osm_tags: Record<string, string>;
   }
 
+  interface IntersectionProps {
+    intersection_id: number;
+  }
+
   let edges: FeatureCollection<LineString, EdgeProps> = JSON.parse(
     $backend!.getEdges(),
+  );
+  let intersections: FeatureCollection<Point, IntersectionProps> = JSON.parse(
+    $backend!.getIntersections(),
   );
   let faces: FeatureCollection<Polygon, FaceProps> = JSON.parse(
     $backend!.getFaces(),
@@ -53,6 +60,7 @@
 
   let showRealBlocks = false;
   let showEdges = true;
+  let showIntersections = true;
   let showBuildings = false;
 
   let tmpHoveredFace: Feature | null = null;
@@ -65,12 +73,15 @@
     if (tool == "collapseToCentroid") {
       $backend!.collapseToCentroid(e.detail.features[0].properties!.face_id);
     } else if (tool == "dualCarriageway") {
-      $backend!.collapseDualCarriageway(e.detail.features[0].properties!.face_id);
+      $backend!.collapseDualCarriageway(
+        e.detail.features[0].properties!.face_id,
+      );
     } else {
-            return;
+      return;
     }
 
     edges = JSON.parse($backend!.getEdges());
+    intersections = JSON.parse($backend!.getIntersections());
     faces = JSON.parse($backend!.getFaces());
     hoveredFace = null;
     undoCount = undoCount + 1;
@@ -80,6 +91,7 @@
     $backend!.undo();
 
     edges = JSON.parse($backend!.getEdges());
+    intersections = JSON.parse($backend!.getIntersections());
     faces = JSON.parse($backend!.getFaces());
     hoveredFace = null;
     undoCount = undoCount - 1;
@@ -120,7 +132,9 @@
       <option value="collapseToCentroid">
         Click to collapse a face to its centroid
       </option>
-      <option value="dualCarriageway">Click to collapse a dual carriageway</option>
+      <option value="dualCarriageway">
+        Click to collapse a dual carriageway
+      </option>
     </select>
 
     <button class="secondary" on:click={undo} disabled={undoCount == 0}>
@@ -135,6 +149,11 @@
     <label>
       <input type="checkbox" bind:checked={showEdges} />
       Show edges
+    </label>
+
+    <label>
+      <input type="checkbox" bind:checked={showIntersections} />
+      Show intersections
     </label>
 
     <label>
@@ -207,6 +226,17 @@
           <PropertiesTable properties={JSON.parse(props.osm_tags)} />
         </Popup>
       </LineLayer>
+    </GeoJSON>
+
+    <GeoJSON data={intersections}>
+      <CircleLayer
+        id="intersections"
+        paint={{
+          "circle-color": "green",
+          "circle-radius": 7,
+        }}
+        layout={{ visibility: showIntersections ? "visible" : "none" }}
+      />
     </GeoJSON>
 
     <DebuggerLayer data={debugFace(hoveredFace, tool)} />

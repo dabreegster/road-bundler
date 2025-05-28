@@ -86,6 +86,17 @@ impl RoadBundler {
         serde_json::to_string(&GeoJson::from(features)).map_err(err_to_js)
     }
 
+    #[wasm_bindgen(js_name = getIntersections)]
+    pub fn get_intersections(&self) -> Result<String, JsValue> {
+        let mut features = Vec::new();
+        for (id, i) in &self.graph.intersections {
+            let mut f = self.graph.mercator.to_wgs84_gj(&i.point);
+            f.set_property("intersection_id", id.0);
+            features.push(f);
+        }
+        serde_json::to_string(&GeoJson::from(features)).map_err(err_to_js)
+    }
+
     #[wasm_bindgen(js_name = getFaces)]
     pub fn get_faces(&self) -> Result<String, JsValue> {
         let mut features = Vec::new();
