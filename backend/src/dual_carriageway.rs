@@ -218,7 +218,12 @@ impl RoadBundler {
             );
         }
 
-        // TODO Remove orphaned intersections
+        // Remove orphaned intersections
+        for i in &face.boundary_intersections {
+            if self.graph.intersections[i].edges.is_empty() {
+                self.graph.remove_empty_intersection(*i);
+            }
+        }
     }
 }
 

@@ -142,6 +142,16 @@ impl Graph {
         }
     }
 
+    pub fn remove_empty_intersection(&mut self, i: IntersectionID) {
+        let intersection = self
+            .intersections
+            .remove(&i)
+            .expect("can't remove intersection that doesn't exist");
+        if !intersection.edges.is_empty() {
+            panic!("intersection wasn't empty, but removed");
+        }
+    }
+
     /// Returns the new intersections created
     pub fn create_new_linked_edges(
         &mut self,
