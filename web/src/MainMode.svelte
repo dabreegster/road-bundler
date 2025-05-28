@@ -16,7 +16,7 @@
     Polygon,
     Point,
   } from "geojson";
-  import { Popup } from "svelte-utils/map";
+  import { constructMatchExpression, Popup } from "svelte-utils/map";
   import { PropertiesTable } from "svelte-utils";
 
   interface FaceProps {
@@ -33,6 +33,7 @@
       side2_edges: number[];
       side1: Feature<LineString>;
       side2: Feature<LineString>;
+      center_line: Feature<LineString>;
     };
   }
 
@@ -137,7 +138,8 @@
       let dc = hoveredFace.properties.dual_carriageway;
       dc.side1.properties = { side: "A" };
       dc.side2.properties = { side: "B" };
-      features = [dc.side1, dc.side2];
+      dc.center_line.properties = { side: "center" };
+      features = [dc.side1, dc.side2, dc.center_line];
     }
     return {
       type: "FeatureCollection" as const,
@@ -201,7 +203,6 @@
         id="faces"
         beforeId="Road labels"
         manageHoverState
-        eventsIfTopMost
         filter={showRealBlocks
           ? undefined
           : ["==", ["get", "num_buildings"], 0]}
@@ -278,12 +279,11 @@
         paint={{
           "line-width": 15,
           "line-opacity": 0.5,
-          "line-color": [
-            "case",
-            ["==", ["get", "side"], "A"],
-            "purple",
-            "blue",
-          ],
+          "line-color": constructMatchExpression(
+            ["get", "side"],
+            { A: "purple", B: "blue", center: "black" },
+            "red",
+          ),
         }}
       />
     </GeoJSON>

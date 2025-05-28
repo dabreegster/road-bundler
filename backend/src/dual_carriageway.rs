@@ -15,6 +15,7 @@ pub struct DualCarriageway {
     pub side2_edges: Vec<usize>,
     pub side1: Feature,
     pub side2: Feature,
+    pub center_line: Feature,
 }
 
 impl DualCarriageway {
@@ -86,6 +87,11 @@ impl DualCarriageway {
             return None;
         }
 
+        let center_line = crate::average_lines::average_linestrings(
+            &side1_joined[0].linestring,
+            &side2_joined[0].linestring,
+        )?;
+
         Some(Self {
             name,
             bearings,
@@ -93,6 +99,7 @@ impl DualCarriageway {
             side2_edges: side2.iter().map(|e| e.0).collect(),
             side1: graph.mercator.to_wgs84_gj(&side1_joined[0].linestring),
             side2: graph.mercator.to_wgs84_gj(&side2_joined[0].linestring),
+            center_line: graph.mercator.to_wgs84_gj(&center_line),
         })
     }
 }

@@ -16,6 +16,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::faces::{make_faces, Face, FaceID};
 
+mod average_lines;
 mod dual_carriageway;
 mod faces;
 mod join_lines;
