@@ -90,6 +90,7 @@ impl DualCarriageway {
             &side1_joined[0].linestring,
             &side2_joined[0].linestring,
         )?;
+        let splits = crate::split_line::split_center(graph, &center_line, face);
 
         let mut debug_hover = Debugger::new(graph.mercator.clone());
         for e in &side1 {
@@ -103,11 +104,26 @@ impl DualCarriageway {
         debug_hover.line(&center_line, "new center", "black", 10, 1.0);
         for e in &face.boundary_edges {
             if !side1.contains(e) && !side2.contains(e) {
-                debug_hover.line(&graph.edges[e].linestring, "leftover boundary edge", "red", 5, 1.0);
+                debug_hover.line(
+                    &graph.edges[e].linestring,
+                    "leftover boundary edge",
+                    "red",
+                    5,
+                    1.0,
+                );
             }
         }
         for e in &face.connecting_edges {
-            debug_hover.line(&graph.edges[e].linestring, "connecting edge", "yellow", 5, 1.0);
+            debug_hover.line(
+                &graph.edges[e].linestring,
+                "connecting edge",
+                "yellow",
+                5,
+                1.0,
+            );
+        }
+        for pt in splits.split_pts {
+            debug_hover.circle(pt, "split", "green", 5);
         }
 
         Some(Self {

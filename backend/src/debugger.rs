@@ -25,7 +25,6 @@ impl Debugger {
         self.features.push(f);
     }
 
-    #[allow(unused)]
     pub fn circle(&mut self, pt: Point, label: &str, color: &str, radius: usize) {
         let mut f = self.mercator.to_wgs84_gj(&pt);
         f.set_property("label", label);

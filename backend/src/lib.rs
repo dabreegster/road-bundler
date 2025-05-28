@@ -24,6 +24,7 @@ mod faces;
 mod join_lines;
 mod scrape_buildings;
 mod slice_nearest_boundary;
+mod split_line;
 
 static START: Once = Once::new();
 
