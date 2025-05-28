@@ -7,10 +7,12 @@ use utils::osm2graph::{EdgeID, Graph};
 
 use crate::{Debugger, Face};
 
+// TODO Don't serialize this. Plumb the extra debug info as foreign members?
 #[derive(Serialize)]
 pub struct DualCarriageway {
     pub name: String,
     pub bearings: Vec<f64>,
+    pub center_line: LineString,
 
     pub debug_hover: GeoJson,
 }
@@ -103,6 +105,7 @@ impl DualCarriageway {
         Some(Self {
             name,
             bearings,
+            center_line,
             debug_hover: debug_hover.build(),
         })
     }

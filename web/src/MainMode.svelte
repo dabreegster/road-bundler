@@ -61,12 +61,14 @@
     ? faces.features[tmpHoveredFace.id! as number]
     : (null as Feature<Polygon, FaceProps> | null);
 
-  function collapseFace(e: CustomEvent<LayerClickInfo>) {
-    if (tool != "collapseToCentroid") {
-      return;
+  function clickFace(e: CustomEvent<LayerClickInfo>) {
+    if (tool == "collapseToCentroid") {
+      $backend!.collapseToCentroid(e.detail.features[0].properties!.face_id);
+    } else if (tool == "dualCarriageway") {
+      $backend!.collapseDualCarriageway(e.detail.features[0].properties!.face_id);
+    } else {
+            return;
     }
-
-    $backend!.collapseToCentroid(e.detail.features[0].properties!.face_id);
 
     edges = JSON.parse($backend!.getEdges());
     faces = JSON.parse($backend!.getFaces());
@@ -118,7 +120,7 @@
       <option value="collapseToCentroid">
         Click to collapse a face to its centroid
       </option>
-      <option value="dualCarriageway">Hover to debug dual carriageways</option>
+      <option value="dualCarriageway">Click to collapse a dual carriageway</option>
     </select>
 
     <button class="secondary" on:click={undo} disabled={undoCount == 0}>
@@ -173,7 +175,7 @@
         }}
         bind:hovered={tmpHoveredFace}
         hoverCursor={tool == "explore" ? undefined : "pointer"}
-        on:click={collapseFace}
+        on:click={clickFace}
       />
     </GeoJSON>
 

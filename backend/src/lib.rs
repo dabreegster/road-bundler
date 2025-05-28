@@ -121,12 +121,20 @@ impl RoadBundler {
         self.commands.push(cmd);
         self.apply_cmd(cmd);
     }
+
+    #[wasm_bindgen(js_name = collapseDualCarriageway)]
+    pub fn collapse_dual_carriageway_wasm(&mut self, id: usize) {
+        let cmd = Command::CollapseDualCarriageway(FaceID(id));
+        self.commands.push(cmd);
+        self.apply_cmd(cmd);
+    }
 }
 
 // IDs are only meaningful when applied in the correct order
 #[derive(Clone, Copy)]
 pub enum Command {
     CollapseToCentroid(FaceID),
+    CollapseDualCarriageway(FaceID),
 }
 
 fn err_to_js<E: std::fmt::Display>(err: E) -> JsValue {

@@ -8,7 +8,10 @@ use geojson::Feature;
 use i_overlay::core::fill_rule::FillRule;
 use i_overlay::float::slice::FloatSlice;
 use rstar::{primitives::GeomWithData, RTree, AABB};
-use utils::osm2graph::{EdgeID, Graph, Intersection, IntersectionID};
+use utils::{
+    osm2graph::{Edge, EdgeID, Graph, Intersection, IntersectionID},
+    Tags,
+};
 
 use crate::{slice_nearest_boundary::SliceNearEndpoints, Command, Debugger, RoadBundler};
 
@@ -173,6 +176,7 @@ impl RoadBundler {
     pub fn apply_cmd(&mut self, cmd: Command) {
         match cmd {
             Command::CollapseToCentroid(face) => self.collapse_to_centroid(face),
+            Command::CollapseDualCarriageway(face) => self.collapse_dual_carriageway(face),
         }
         self.faces = make_faces(&self.graph, &self.building_centroids);
     }
@@ -205,6 +209,52 @@ impl RoadBundler {
         }
 
         // TODO Do we need to compact_ids again?
+    }
+
+    fn collapse_dual_carriageway(&mut self, id: FaceID) {
+        let face = &self.faces[&id];
+        let dc = crate::dual_carriageway::DualCarriageway::maybe_new(&self.graph, face)
+            .expect("collapse_dual_carriageway on something that isn't a DC");
+
+        // Remove all the boundary_edges
+        for e in &face.boundary_edges {
+            remove_edge(&mut self.graph, *e);
+        }
+
+        // Create the new center-line, unsplit and disconnected
+        let new_e = next_edge_id(&self.graph);
+        let new_i1 = next_intersection_id(&self.graph);
+        let new_i2 = next_intersection_id(&self.graph);
+        for (id, pt) in vec![
+            (new_i1, dc.center_line.0[0]),
+            (new_i2, dc.center_line.0[dc.center_line.0.len() - 1]),
+        ] {
+            self.graph.intersections.insert(
+                id,
+                Intersection {
+                    id,
+                    edges: vec![new_e],
+                    // TODO Need a diff graph struct, to allow for mixed synthetic and OSM
+                    osm_node: osm_reader::NodeID(0),
+                    point: pt.into(),
+                },
+            );
+        }
+        self.graph.edges.insert(
+            new_e,
+            Edge {
+                id: new_e,
+                src: new_i1,
+                dst: new_i2,
+
+                osm_way: osm_reader::WayID(0),
+                osm_node1: osm_reader::NodeID(0),
+                osm_node2: osm_reader::NodeID(0),
+                osm_tags: Tags::empty(),
+
+                linestring: dc.center_line,
+            },
+        );
     }
 }
 
@@ -268,6 +318,10 @@ fn next_intersection_id(graph: &Graph) -> IntersectionID {
     IntersectionID(graph.intersections.keys().max().unwrap().0 + 1)
 }
 
+fn next_edge_id(graph: &Graph) -> EdgeID {
+    EdgeID(graph.edges.keys().max().unwrap().0 + 1)
+}
+
 impl Face {
     pub fn to_gj(&self, graph: &Graph, id: FaceID) -> Feature {
         let mut debug_hover = Debugger::new(graph.mercator.clone());
@@ -288,7 +342,7 @@ impl Face {
                 graph.intersections[i].point,
                 "boundary intersection",
                 "green",
-                3,
+                5,
             );
         }
 
