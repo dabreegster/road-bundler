@@ -28,11 +28,13 @@
     num_buildings: number;
     has_parking_aisle: boolean;
 
-    dual_carriageway?: {
-      name: string;
-      bearings: number[];
-      debug_hover: FeatureCollection;
-    };
+    dual_carriageway:
+      | {
+          name: string;
+          bearings: number[];
+          debug_hover: FeatureCollection;
+        }
+      | string;
   }
 
   interface EdgeProps {
@@ -147,7 +149,7 @@
     if (
       tool == "dualCarriageway" &&
       hoveredFace &&
-      hoveredFace.properties.dual_carriageway
+      typeof hoveredFace.properties.dual_carriageway != "string"
     ) {
       return hoveredFace.properties.dual_carriageway.debug_hover;
     }
@@ -175,12 +177,14 @@
 
     {#if hoveredFace}
       {#if tool == "dualCarriageway"}
-        {#if hoveredFace.properties.dual_carriageway}
+        {#if typeof hoveredFace.properties.dual_carriageway == "string"}
+          <p>
+            Not a dual carriageway: {hoveredFace.properties.dual_carriageway}
+          </p>
+        {:else}
           {@const dc = hoveredFace.properties.dual_carriageway}
           <p>{dc.name}</p>
-          <p>{dc.bearings.map((b) => Math.round(b)).join(", ")}</p>
-        {:else}
-          <p>Not a dual carriageway</p>
+          <p>Bearings: {dc.bearings.map((b) => Math.round(b)).join(", ")}</p>
         {/if}
       {/if}
     {/if}

@@ -1,6 +1,7 @@
+use anyhow::Result;
 use geo::{Closest, ClosestPoint, Coord, Euclidean, InterpolatableLine, Length, LineString};
 
-pub fn average_linestrings(ls1: &LineString, ls2: &LineString) -> Option<LineString> {
+pub fn average_linestrings(ls1: &LineString, ls2: &LineString) -> Result<LineString> {
     // Walk along ls1 at this step size, find the closest equivalent point in ls2, and average the
     // two.
     let step_size = 10.0;
@@ -41,9 +42,8 @@ pub fn average_linestrings(ls1: &LineString, ls2: &LineString) -> Option<LineStr
     }
 
     if pts.len() < 2 {
-        error!("step_size too big for ls1_length {ls1_length}");
-        return None;
+        bail!("step_size too big for ls1_length {ls1_length}");
     }
 
-    Some(LineString::new(pts))
+    Ok(LineString::new(pts))
 }

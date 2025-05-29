@@ -1,3 +1,4 @@
+use anyhow::{Context, Result};
 use geo::{Coord, Distance, Euclidean, Line, LineString};
 use geojson::GeoJson;
 use itertools::Itertools;
@@ -19,7 +20,7 @@ pub struct DualCarriageway {
 }
 
 impl DualCarriageway {
-    pub fn maybe_new(graph: &Graph, face: &Face) -> Option<Self> {
+    pub fn maybe_new(graph: &Graph, face: &Face) -> Result<Self> {
         let (name, dc_edges) = detect_dc_edges(graph, face)?;
 
         let bearings: Vec<f64> = dc_edges
@@ -57,12 +58,11 @@ impl DualCarriageway {
                 .collect(),
         );
         if side1_joined.len() != 1 || side2_joined.len() != 1 {
-            info!(
+            bail!(
                 "Not a DC because we have {} and {} joined line results",
                 side1_joined.len(),
                 side2_joined.len()
             );
-            return None;
         }
 
         let center_line = crate::average_lines::average_linestrings(
@@ -105,7 +105,7 @@ impl DualCarriageway {
             debug_hover.circle(*pt, "split", "green", 5);
         }
 
-        Some(Self {
+        Ok(Self {
             name,
             bearings,
             center_line,
@@ -115,7 +115,7 @@ impl DualCarriageway {
     }
 }
 
-fn detect_dc_edges(graph: &Graph, face: &Face) -> Option<(String, Vec<EdgeID>)> {
+fn detect_dc_edges(graph: &Graph, face: &Face) -> Result<(String, Vec<EdgeID>)> {
     // Find all of the oneway edges
     let oneways: Vec<EdgeID> = face
         .boundary_edges
@@ -132,15 +132,16 @@ fn detect_dc_edges(graph: &Graph, face: &Face) -> Option<(String, Vec<EdgeID>)> 
     // Pick the group with the most members
     let (name, dc_edges) = oneways_by_name
         .into_iter()
-        .max_by_key(|(_, list)| list.len())?;
+        .max_by_key(|(_, list)| list.len())
+        .context("no oneways")?;
 
     // Make sure there IS a name, and we have at least two edges
-    let name = name?;
+    let name = name.context("one-ways don't have a name")?;
     if dc_edges.len() < 2 {
-        return None;
+        bail!("not enough edges to form a DC");
     }
 
-    Some((name.to_string(), dc_edges))
+    Ok((name.to_string(), dc_edges))
 }
 
 fn angle_of_line(line: Line) -> f64 {

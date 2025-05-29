@@ -271,8 +271,9 @@ impl Face {
         f.set_property("debug_hover", debug_hover.build());
         f.set_property("num_buildings", self.num_buildings);
         f.set_property("has_parking_aisle", self.has_parking_aisle);
-        if let Some(dc) = crate::dual_carriageway::DualCarriageway::maybe_new(graph, self) {
-            f.set_property("dual_carriageway", serde_json::to_value(&dc).unwrap());
+        match crate::dual_carriageway::DualCarriageway::maybe_new(graph, self) {
+            Ok(dc) => f.set_property("dual_carriageway", serde_json::to_value(&dc).unwrap()),
+            Err(err) => f.set_property("dual_carriageway", err.to_string()),
         }
         f
     }
