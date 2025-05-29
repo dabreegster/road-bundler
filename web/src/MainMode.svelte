@@ -20,7 +20,7 @@
     Point,
   } from "geojson";
   import { emptyGeojson, Popup } from "svelte-utils/map";
-  import { PropertiesTable } from "svelte-utils";
+  import { PropertiesTable, QualitativeLegend } from "svelte-utils";
 
   interface FaceProps {
     face_id: number;
@@ -51,6 +51,7 @@
 
   interface IntersectionProps {
     intersection_id: number;
+    provenance: { OSM: number } | "Synthetic";
   }
 
   let edges: FeatureCollection<LineString, EdgeProps> = JSON.parse(
@@ -197,6 +198,16 @@
         </label>
 
         <hr />
+        <QualitativeLegend
+          labelColors={{
+            "OSM edge": "black",
+            "OSM intersection": "green",
+            "synthetic edge": "orange",
+            "synthetic intersection": "pink",
+          }}
+          itemsPerRow={1}
+        />
+
         <DebuggerLegend data={debugFace(hoveredFace, tool)} />
       </div>
     </Control>
@@ -247,7 +258,12 @@
         eventsIfTopMost
         paint={{
           "line-width": hoverStateFilter(5, 8),
-          "line-color": "black",
+          "line-color": [
+            "case",
+            ["==", ["get", "provenance"], "Synthetic"],
+            "orange",
+            "black",
+          ],
         }}
         layout={{ visibility: showEdges ? "visible" : "none" }}
       >
@@ -267,7 +283,12 @@
       <CircleLayer
         id="intersections"
         paint={{
-          "circle-color": "green",
+          "circle-color": [
+            "case",
+            ["==", ["get", "provenance"], "Synthetic"],
+            "pink",
+            "green",
+          ],
           "circle-radius": 7,
         }}
         layout={{ visibility: showIntersections ? "visible" : "none" }}

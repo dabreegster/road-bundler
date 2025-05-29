@@ -95,6 +95,10 @@ impl RoadBundler {
         for (id, i) in &self.graph.intersections {
             let mut f = self.graph.mercator.to_wgs84_gj(&i.point);
             f.set_property("intersection_id", id.0);
+            f.set_property(
+                "provenance",
+                serde_json::to_value(&i.provenance).map_err(err_to_js)?,
+            );
             features.push(f);
         }
         serde_json::to_string(&GeoJson::from(features)).map_err(err_to_js)
