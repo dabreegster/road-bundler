@@ -146,6 +146,29 @@ impl RoadBundler {
         self.commands.push(cmd);
         self.apply_cmd(cmd);
     }
+
+    /// Returns the number of new commands applied
+    #[wasm_bindgen(js_name = fixAllDualCarriageways)]
+    pub fn fix_all_dual_carriageways(&mut self) -> usize {
+        let mut cmds_applied = 0;
+
+        loop {
+            error!("in the loop");
+            if let Some((id, _)) = self.faces.iter().find(|(_, face)| {
+                crate::dual_carriageway::DualCarriageway::maybe_new(&self.graph, face).is_ok()
+            }) {
+                error!("try to apply to {}", id.0);
+                let cmd = Command::CollapseDualCarriageway(*id);
+                self.commands.push(cmd);
+                self.apply_cmd(cmd);
+                cmds_applied += 1;
+            } else {
+                break;
+            }
+        }
+
+        cmds_applied
+    }
 }
 
 impl RoadBundler {

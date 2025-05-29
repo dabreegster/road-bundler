@@ -94,33 +94,47 @@
       } else {
         return;
       }
+
+      afterMutation();
+      undoCount = undoCount + 1;
     } catch (err) {
       window.alert(
         `You probably have to refresh the app now; something broke: ${err}`,
       );
     }
-
-    edges = JSON.parse($backend!.getEdges());
-    intersections = JSON.parse($backend!.getIntersections());
-    faces = JSON.parse($backend!.getFaces());
-    hoveredFace = null;
-    undoCount = undoCount + 1;
   }
 
   function undo() {
     try {
       $backend!.undo();
+
+      afterMutation();
+      undoCount = undoCount - 1;
     } catch (err) {
       window.alert(
         `You probably have to refresh the app now; something broke: ${err}`,
       );
     }
+  }
 
+  function fixAllDCs() {
+    try {
+      let newCommands = $backend!.fixAllDualCarriageways();
+
+      afterMutation();
+      undoCount = undoCount + newCommands;
+    } catch (err) {
+      window.alert(
+        `You probably have to refresh the app now; something broke: ${err}`,
+      );
+    }
+  }
+
+  function afterMutation() {
     edges = JSON.parse($backend!.getEdges());
     intersections = JSON.parse($backend!.getIntersections());
     faces = JSON.parse($backend!.getFaces());
     hoveredFace = null;
-    undoCount = undoCount - 1;
   }
 
   function keyDown(e: KeyboardEvent) {
@@ -162,21 +176,25 @@
 <SplitComponent>
   <div slot="sidebar">
     <select bind:value={tool}>
-      <option value="explore">Just pan around the map</option>
-      <option value="collapseToCentroid">
-        Click to collapse a face to its centroid
-      </option>
-      <option value="dualCarriageway">
-        Click to collapse a dual carriageway
-      </option>
+      <option value="explore">Explore the map</option>
+      <option value="collapseToCentroid">Roundabouts</option>
+      <option value="dualCarriageway">Dual carriageways</option>
     </select>
 
     <button class="secondary" on:click={undo} disabled={undoCount == 0}>
       Undo ({undoCount})
     </button>
 
-    {#if hoveredFace}
-      {#if tool == "dualCarriageway"}
+    {#if tool == "explore"}
+      <p>Just pan around the map</p>
+    {:else if tool == "collapseToCentroid"}
+      <p>Click to collapse a face to its centroid</p>
+    {:else if tool == "dualCarriageway"}
+      <p>Click to collapse a dual carriageway</p>
+
+      <button class="secondary" on:click={fixAllDCs}>Collapse all DCs</button>
+
+      {#if hoveredFace}
         {#if typeof hoveredFace.properties.dual_carriageway == "string"}
           <p>
             Not a dual carriageway: {hoveredFace.properties.dual_carriageway}
