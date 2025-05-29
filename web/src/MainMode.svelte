@@ -9,6 +9,7 @@
     hoverStateFilter,
     CircleLayer,
     FillLayer,
+    Control,
     type LayerClickInfo,
   } from "svelte-maplibre";
   import type {
@@ -159,26 +160,6 @@
       Undo ({undoCount})
     </button>
 
-    <label>
-      <input type="checkbox" bind:checked={showRealBlocks} />
-      Show real blocks
-    </label>
-
-    <label>
-      <input type="checkbox" bind:checked={showEdges} />
-      Show edges
-    </label>
-
-    <label>
-      <input type="checkbox" bind:checked={showIntersections} />
-      Show intersections
-    </label>
-
-    <label>
-      <input type="checkbox" bind:checked={showBuildings} />
-      Show building centroids
-    </label>
-
     {#if hoveredFace}
       {#if tool == "dualCarriageway"}
         {#if hoveredFace.properties.dual_carriageway}
@@ -190,12 +171,36 @@
         {/if}
       {/if}
     {/if}
-
-    <hr />
-    <DebuggerLegend data={debugFace(hoveredFace, tool)} />
   </div>
 
   <div slot="map">
+    <Control position="top-right">
+      <div class="map-panel">
+        <label>
+          <input type="checkbox" bind:checked={showRealBlocks} />
+          Show real blocks
+        </label>
+
+        <label>
+          <input type="checkbox" bind:checked={showEdges} />
+          Show edges
+        </label>
+
+        <label>
+          <input type="checkbox" bind:checked={showIntersections} />
+          Show intersections
+        </label>
+
+        <label>
+          <input type="checkbox" bind:checked={showBuildings} />
+          Show building centroids
+        </label>
+
+        <hr />
+        <DebuggerLegend data={debugFace(hoveredFace, tool)} />
+      </div>
+    </Control>
+
     <GeoJSON data={faces} generateId>
       <FillLayer
         id="faces"
@@ -272,3 +277,10 @@
     <DebuggerLayer data={debugFace(hoveredFace, tool)} />
   </div>
 </SplitComponent>
+
+<style>
+  .map-panel {
+    background: white;
+    padding: 16px;
+  }
+</style>
