@@ -26,8 +26,7 @@
   interface FaceProps {
     face_id: number;
     debug_hover: FeatureCollection;
-    num_buildings: number;
-    has_parking_aisle: boolean;
+    is_urban_block: boolean;
 
     dual_carriageway:
       | {
@@ -73,7 +72,7 @@
   let tool: "explore" | "collapseToCentroid" | "dualCarriageway" = "explore";
   let undoCount = 0;
 
-  let showRealBlocks = false;
+  let showUrbanBlocks = false;
   let showEdges = true;
   let showIntersections = true;
   let showBuildings = false;
@@ -177,7 +176,7 @@
   // TS fail
   $: faceFillColor = [
     "case",
-    [">", ["get", "num_buildings"], 0],
+    ["get", "is_urban_block"],
     "purple",
     ["!=", ["typeof", ["get", "dual_carriageway"]], "string"],
     tool == "dualCarriageway" ? "blue" : "cyan",
@@ -234,8 +233,8 @@
         </label>
 
         <label>
-          <input type="checkbox" bind:checked={showRealBlocks} />
-          Show real blocks
+          <input type="checkbox" bind:checked={showUrbanBlocks} />
+          Show urban blocks
         </label>
 
         <label>
@@ -273,13 +272,7 @@
         id="faces"
         beforeId="Road labels"
         manageHoverState
-        filter={showRealBlocks
-          ? undefined
-          : [
-              "all",
-              ["==", ["get", "num_buildings"], 0],
-              ["!", ["get", "has_parking_aisle"]],
-            ]}
+        filter={showUrbanBlocks ? undefined : ["!", ["get", "is_urban_block"]]}
         paint={{
           "fill-color": faceFillColor,
           "fill-opacity": hoverStateFilter(0.2, 1),

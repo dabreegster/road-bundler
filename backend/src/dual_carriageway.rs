@@ -116,7 +116,7 @@ impl DualCarriageway {
 }
 
 fn detect_dc_edges(graph: &Graph, face: &Face) -> Result<(String, Vec<EdgeID>)> {
-    if face.num_buildings > 0 || face.has_parking_aisle {
+    if face.is_urban_block {
         bail!("Face is an urban block");
     }
 

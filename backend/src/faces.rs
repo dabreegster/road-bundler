@@ -22,8 +22,7 @@ pub struct Face {
     pub boundary_edges: Vec<EdgeID>,
     pub boundary_intersections: Vec<IntersectionID>,
     pub connecting_edges: Vec<EdgeID>,
-    pub num_buildings: usize,
-    pub has_parking_aisle: bool,
+    pub is_urban_block: bool,
 }
 
 pub fn make_faces(graph: &Graph, building_centroids: &Vec<Point>) -> BTreeMap<FaceID, Face> {
@@ -63,6 +62,7 @@ pub fn make_faces(graph: &Graph, building_centroids: &Vec<Point>) -> BTreeMap<Fa
         let has_parking_aisle = boundary_edges
             .iter()
             .any(|e| graph.edges[e].is_parking_aisle());
+        let is_urban_block = num_buildings > 0 || has_parking_aisle;
 
         let id = FaceID(faces.len());
         faces.insert(
@@ -72,8 +72,7 @@ pub fn make_faces(graph: &Graph, building_centroids: &Vec<Point>) -> BTreeMap<Fa
                 boundary_edges,
                 boundary_intersections,
                 connecting_edges,
-                num_buildings,
-                has_parking_aisle,
+                is_urban_block,
             },
         );
     }
@@ -269,8 +268,7 @@ impl Face {
         let mut f = graph.mercator.to_wgs84_gj(&self.polygon);
         f.set_property("face_id", id.0);
         f.set_property("debug_hover", debug_hover.build());
-        f.set_property("num_buildings", self.num_buildings);
-        f.set_property("has_parking_aisle", self.has_parking_aisle);
+        f.set_property("is_urban_block", self.is_urban_block);
         match crate::dual_carriageway::DualCarriageway::maybe_new(graph, self) {
             Ok(dc) => f.set_property("dual_carriageway", serde_json::to_value(&dc).unwrap()),
             Err(err) => f.set_property("dual_carriageway", err.to_string()),
