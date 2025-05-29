@@ -116,6 +116,10 @@ impl DualCarriageway {
 }
 
 fn detect_dc_edges(graph: &Graph, face: &Face) -> Result<(String, Vec<EdgeID>)> {
+    if face.num_buildings > 0 || face.has_parking_aisle {
+        bail!("Face is an urban block");
+    }
+
     // Find all of the oneway edges with a name
     let oneways: Vec<EdgeID> = face
         .boundary_edges
