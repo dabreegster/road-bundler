@@ -82,14 +82,20 @@
     : (null as Feature<Polygon, FaceProps> | null);
 
   function clickFace(e: CustomEvent<LayerClickInfo>) {
-    if (tool == "collapseToCentroid") {
-      $backend!.collapseToCentroid(e.detail.features[0].properties!.face_id);
-    } else if (tool == "dualCarriageway") {
-      $backend!.collapseDualCarriageway(
-        e.detail.features[0].properties!.face_id,
+    try {
+      if (tool == "collapseToCentroid") {
+        $backend!.collapseToCentroid(e.detail.features[0].properties!.face_id);
+      } else if (tool == "dualCarriageway") {
+        $backend!.collapseDualCarriageway(
+          e.detail.features[0].properties!.face_id,
+        );
+      } else {
+        return;
+      }
+    } catch (err) {
+      window.alert(
+        `You probably have to refresh the app now; something broke: ${err}`,
       );
-    } else {
-      return;
     }
 
     edges = JSON.parse($backend!.getEdges());
@@ -100,7 +106,13 @@
   }
 
   function undo() {
-    $backend!.undo();
+    try {
+      $backend!.undo();
+    } catch (err) {
+      window.alert(
+        `You probably have to refresh the app now; something broke: ${err}`,
+      );
+    }
 
     edges = JSON.parse($backend!.getEdges());
     intersections = JSON.parse($backend!.getIntersections());
