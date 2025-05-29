@@ -1,7 +1,6 @@
-use std::collections::HashSet;
-
 use geo::{Coord, Distance, Euclidean, Line, LineString};
 use geojson::GeoJson;
+use itertools::Itertools;
 use serde::Serialize;
 
 use crate::split_line::Splits;
@@ -21,31 +20,9 @@ pub struct DualCarriageway {
 
 impl DualCarriageway {
     pub fn maybe_new(graph: &Graph, face: &Face) -> Option<Self> {
-        // Find all of the oneway edges
-        let mut oneways: Vec<EdgeID> = face
-            .boundary_edges
-            .iter()
-            .filter(|e| graph.edges[e].is_oneway())
-            .cloned()
-            .collect();
+        let (name, dc_edges) = detect_dc_edges(graph, face)?;
 
-        // Make sure they have a name
-        oneways.retain(|e| graph.edges[e].get_name().is_some());
-        if oneways.len() < 2 {
-            return None;
-        }
-
-        // Do they all have the same name?
-        let names: HashSet<String> = oneways
-            .iter()
-            .map(|e| graph.edges[e].get_name().cloned().unwrap())
-            .collect();
-        if names.len() != 1 {
-            return None;
-        }
-        let name = names.into_iter().next().unwrap();
-
-        let bearings: Vec<f64> = oneways
+        let bearings: Vec<f64> = dc_edges
             .iter()
             .map(|e| linestring_bearing(&graph.edges[e].linestring))
             .collect();
@@ -53,7 +30,7 @@ impl DualCarriageway {
 
         let mut side1 = Vec::new();
         let mut side2 = Vec::new();
-        for (e, cluster) in oneways.into_iter().zip(clusters.into_iter()) {
+        for (e, cluster) in dc_edges.into_iter().zip(clusters.into_iter()) {
             if cluster == 0 {
                 side1.push(e);
             } else {
@@ -136,6 +113,34 @@ impl DualCarriageway {
             debug_hover: debug_hover.build(),
         })
     }
+}
+
+fn detect_dc_edges(graph: &Graph, face: &Face) -> Option<(String, Vec<EdgeID>)> {
+    // Find all of the oneway edges
+    let oneways: Vec<EdgeID> = face
+        .boundary_edges
+        .iter()
+        .filter(|e| graph.edges[e].is_oneway())
+        .cloned()
+        .collect();
+
+    // Group by their name
+    let oneways_by_name = oneways
+        .into_iter()
+        .into_group_map_by(|e| graph.edges[e].get_name());
+
+    // Pick the group with the most members
+    let (name, dc_edges) = oneways_by_name
+        .into_iter()
+        .max_by_key(|(_, list)| list.len())?;
+
+    // Make sure there IS a name, and we have at least two edges
+    let name = name?;
+    if dc_edges.len() < 2 {
+        return None;
+    }
+
+    Some((name.to_string(), dc_edges))
 }
 
 fn angle_of_line(line: Line) -> f64 {
