@@ -194,28 +194,30 @@ impl RoadBundler {
         // (we could maybe preserve more info to do this directly?)
         for e in &face.connecting_edges {
             let edge = &self.graph.edges[e];
-            let existing_i = if face.boundary_intersections.contains(&edge.src) {
-                edge.src
-            } else {
-                edge.dst
-            };
-            let existing_pt = self.graph.intersections[&existing_i].point;
 
-            let closest_new_i = *new_intersections
-                .iter()
-                .min_by_key(|i| {
-                    (10e6 * Euclidean.distance(existing_pt, self.graph.intersections[i].point))
-                        as usize
-                })
-                .unwrap();
-            self.graph.create_new_edge(
-                LineString::new(vec![
-                    existing_pt.into(),
-                    self.graph.intersections[&closest_new_i].point.into(),
-                ]),
-                existing_i,
-                closest_new_i,
-            );
+            // There could be a loop; handle each endpoint if needed
+            for existing_i in [edge.src, edge.dst] {
+                if !face.boundary_intersections.contains(&existing_i) {
+                    continue;
+                }
+                let existing_pt = self.graph.intersections[&existing_i].point;
+
+                let closest_new_i = *new_intersections
+                    .iter()
+                    .min_by_key(|i| {
+                        (10e6 * Euclidean.distance(existing_pt, self.graph.intersections[i].point))
+                            as usize
+                    })
+                    .unwrap();
+                self.graph.create_new_edge(
+                    LineString::new(vec![
+                        existing_pt.into(),
+                        self.graph.intersections[&closest_new_i].point.into(),
+                    ]),
+                    existing_i,
+                    closest_new_i,
+                );
+            }
         }
 
         // Remove orphaned intersections

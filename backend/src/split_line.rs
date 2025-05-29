@@ -16,22 +16,22 @@ pub fn split_center(graph: &Graph, center_line: &LineString, face: &Face) -> Spl
     let mut split_fractions = Vec::new();
     for e in &face.connecting_edges {
         let edge = &graph.edges[e];
-        let i = if face.boundary_intersections.contains(&edge.src) {
-            edge.src
-        } else {
-            edge.dst
-        };
-
-        let split_pt = match center_line.closest_point(&graph.intersections[&i].point) {
-            Closest::Intersection(pt) => pt,
-            Closest::SinglePoint(pt) => pt,
-            Closest::Indeterminate => {
-                // TODO Possible?
-                panic!("closest_point for split_center is Indeterminate");
+        for i in [edge.src, edge.dst] {
+            if !face.boundary_intersections.contains(&i) {
+                continue;
             }
-        };
 
-        split_fractions.extend(center_line.line_locate_point(&split_pt));
+            let split_pt = match center_line.closest_point(&graph.intersections[&i].point) {
+                Closest::Intersection(pt) => pt,
+                Closest::SinglePoint(pt) => pt,
+                Closest::Indeterminate => {
+                    // TODO Possible?
+                    panic!("closest_point for split_center is Indeterminate");
+                }
+            };
+
+            split_fractions.extend(center_line.line_locate_point(&split_pt));
+        }
     }
     split_fractions.sort_by_key(|x| (*x * 10e9) as usize);
     split_fractions.dedup();
