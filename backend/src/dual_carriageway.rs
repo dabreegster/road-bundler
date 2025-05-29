@@ -116,18 +116,18 @@ impl DualCarriageway {
 }
 
 fn detect_dc_edges(graph: &Graph, face: &Face) -> Result<(String, Vec<EdgeID>)> {
-    // Find all of the oneway edges
+    // Find all of the oneway edges with a name
     let oneways: Vec<EdgeID> = face
         .boundary_edges
         .iter()
-        .filter(|e| graph.edges[e].is_oneway())
+        .filter(|e| graph.edges[e].is_oneway() && graph.edges[e].get_name().is_some())
         .cloned()
         .collect();
 
     // Group by their name
     let oneways_by_name = oneways
         .into_iter()
-        .into_group_map_by(|e| graph.edges[e].get_name());
+        .into_group_map_by(|e| graph.edges[e].get_name().unwrap());
 
     // Pick the group with the most members
     let (name, dc_edges) = oneways_by_name
@@ -135,8 +135,7 @@ fn detect_dc_edges(graph: &Graph, face: &Face) -> Result<(String, Vec<EdgeID>)> 
         .max_by_key(|(_, list)| list.len())
         .context("no oneways")?;
 
-    // Make sure there IS a name, and we have at least two edges
-    let name = name.context("one-ways don't have a name")?;
+    // Make sure we have at least two edges
     if dc_edges.len() < 2 {
         bail!("not enough edges to form a DC");
     }
