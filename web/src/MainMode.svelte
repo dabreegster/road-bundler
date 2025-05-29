@@ -12,6 +12,7 @@
     Control,
     type LayerClickInfo,
   } from "svelte-maplibre";
+  import type { ExpressionSpecification } from "maplibre-gl";
   import type {
     LineString,
     Feature,
@@ -169,6 +170,16 @@
     }
     return emptyGeojson();
   }
+
+  // TS fail
+  $: faceFillColor = [
+    "case",
+    [">", ["get", "num_buildings"], 0],
+    "purple",
+    ["!=", ["typeof", ["get", "dual_carriageway"]], "string"],
+    tool == "dualCarriageway" ? "blue" : "cyan",
+    "cyan",
+  ] as unknown as ExpressionSpecification;
 </script>
 
 <svelte:window on:keydown={keyDown} />
@@ -259,12 +270,7 @@
               ["!", ["get", "has_parking_aisle"]],
             ]}
         paint={{
-          "fill-color": [
-            "case",
-            [">", ["get", "num_buildings"], 0],
-            "purple",
-            "cyan",
-          ],
+          "fill-color": faceFillColor,
           "fill-opacity": hoverStateFilter(0.2, 1),
         }}
         bind:hovered={tmpHoveredFace}
