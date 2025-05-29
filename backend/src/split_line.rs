@@ -33,7 +33,7 @@ pub fn split_center(graph: &Graph, center_line: &LineString, face: &Face) -> Spl
             split_fractions.extend(center_line.line_locate_point(&split_pt));
         }
     }
-    split_fractions.sort_by_key(|x| (*x * 10e9) as usize);
+    split_fractions.sort_by_key(|x| (*x * 10e5) as usize);
     split_fractions.dedup();
     let lines: Vec<LineString> = center_line
         .line_split_many(&split_fractions)
@@ -41,10 +41,6 @@ pub fn split_center(graph: &Graph, center_line: &LineString, face: &Face) -> Spl
         .into_iter()
         .flatten()
         .collect();
-    info!(
-        "split_fractions {split_fractions:?} yields {} lines",
-        lines.len()
-    );
     let new_endpts = linestring_endpoints(&lines);
 
     Splits { lines, new_endpts }

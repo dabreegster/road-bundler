@@ -153,11 +153,9 @@ impl RoadBundler {
         let mut cmds_applied = 0;
 
         loop {
-            error!("in the loop");
             if let Some((id, _)) = self.faces.iter().find(|(_, face)| {
                 crate::dual_carriageway::DualCarriageway::maybe_new(&self.graph, face).is_ok()
             }) {
-                error!("try to apply to {}", id.0);
                 let cmd = Command::CollapseDualCarriageway(*id);
                 self.commands.push(cmd);
                 self.apply_cmd(cmd);
