@@ -20,8 +20,8 @@
     Polygon,
     Point,
   } from "geojson";
-  import { emptyGeojson, Popup } from "svelte-utils/map";
-  import { PropertiesTable, QualitativeLegend } from "svelte-utils";
+  import { isLine, isPoint, emptyGeojson, Popup } from "svelte-utils/map";
+  import { PropertiesTable, QualitativeLegend, notNull } from "svelte-utils";
 
   interface FaceProps {
     face_id: number;
@@ -77,6 +77,7 @@
   let showEdges = true;
   let showIntersections = true;
   let showBuildings = false;
+  let showSimplified = true;
 
   let tmpHoveredFace: Feature | null = null;
   // Maplibre breaks nested properties
@@ -150,6 +151,8 @@
       tool = "collapseToCentroid";
     } else if (e.key == "3") {
       tool = "dualCarriageway";
+    } else if (e.key == "s") {
+      showSimplified = !showSimplified;
     }
   }
 
@@ -222,6 +225,14 @@
   <div slot="map">
     <Control position="top-right">
       <div class="map-panel">
+        <label>
+          <u>S</u>
+          how original OSM
+          <input type="checkbox" role="switch" bind:checked={showSimplified} />
+          <u>S</u>
+          how simplified graph
+        </label>
+
         <label>
           <input type="checkbox" bind:checked={showRealBlocks} />
           Show real blocks
@@ -304,6 +315,7 @@
             "orange",
             "black",
           ],
+          "line-opacity": showSimplified ? 1 : 0.5,
         }}
         layout={{ visibility: showEdges ? "visible" : "none" }}
       >
@@ -330,8 +342,32 @@
             "green",
           ],
           "circle-radius": 7,
+          "circle-opacity": showSimplified ? 1 : 0.5,
         }}
         layout={{ visibility: showIntersections ? "visible" : "none" }}
+      />
+    </GeoJSON>
+
+    <GeoJSON data={JSON.parse(notNull($backend).getOriginalOsmGraph())}>
+      <LineLayer
+        id="original-edges"
+        beforeId="Road labels"
+        filter={isLine}
+        paint={{
+          "line-width": 5,
+          "line-color": "black",
+        }}
+        layout={{ visibility: !showSimplified ? "visible" : "none" }}
+      />
+
+      <CircleLayer
+        id="original-intersections"
+        filter={isPoint}
+        paint={{
+          "circle-color": "green",
+          "circle-radius": 7,
+        }}
+        layout={{ visibility: !showSimplified ? "visible" : "none" }}
       />
     </GeoJSON>
 

@@ -104,6 +104,18 @@ impl RoadBundler {
         serde_json::to_string(&GeoJson::from(features)).map_err(err_to_js)
     }
 
+    #[wasm_bindgen(js_name = getOriginalOsmGraph)]
+    pub fn get_original_osm_graph(&self) -> Result<String, JsValue> {
+        let mut features = Vec::new();
+        for (_, edge) in &self.original_graph.edges {
+            features.push(self.graph.mercator.to_wgs84_gj(&edge.linestring));
+        }
+        for (_, i) in &self.original_graph.intersections {
+            features.push(self.graph.mercator.to_wgs84_gj(&i.point));
+        }
+        serde_json::to_string(&GeoJson::from(features)).map_err(err_to_js)
+    }
+
     #[wasm_bindgen(js_name = getFaces)]
     pub fn get_faces(&self) -> Result<String, JsValue> {
         let mut features = Vec::new();
