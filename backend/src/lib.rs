@@ -20,6 +20,7 @@ use crate::graph::{EdgeID, Graph, Intersection, IntersectionID, IntersectionProv
 
 mod average_lines;
 mod debugger;
+mod dog_leg;
 mod dual_carriageway;
 mod faces;
 mod graph;
@@ -211,6 +212,13 @@ impl RoadBundler {
 
         cmds_applied
     }
+
+    #[wasm_bindgen(js_name = collapseEdge)]
+    pub fn collapse_edge_wasm(&mut self, id: usize) {
+        let cmd = Command::CollapseEdge(EdgeID(id));
+        self.commands.push(cmd);
+        self.apply_cmd(cmd);
+    }
 }
 
 impl RoadBundler {
@@ -219,6 +227,7 @@ impl RoadBundler {
             Command::CollapseToCentroid(face) => self.collapse_to_centroid(face),
             Command::CollapseDualCarriageway(face) => self.collapse_dual_carriageway(face),
             Command::MergeSidepath(face) => self.merge_sidepath(face),
+            Command::CollapseEdge(edge) => self.collapse_edge(edge),
         }
         self.faces = make_faces(&self.graph, &self.building_centroids);
     }
@@ -230,6 +239,7 @@ pub enum Command {
     CollapseToCentroid(FaceID),
     CollapseDualCarriageway(FaceID),
     MergeSidepath(FaceID),
+    CollapseEdge(EdgeID),
 }
 
 fn err_to_js<E: std::fmt::Display>(err: E) -> JsValue {

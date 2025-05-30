@@ -225,4 +225,45 @@ impl Graph {
         self.intersections.get_mut(&src).unwrap().edges.push(id);
         self.intersections.get_mut(&dst).unwrap().edges.push(id);
     }
+
+    /// Extends the edge geometry in a way that probably overlaps
+    pub fn replace_intersection(
+        &mut self,
+        remove_i: IntersectionID,
+        new_intersection: IntersectionID,
+    ) {
+        let intersection = self
+            .intersections
+            .remove(&remove_i)
+            .expect("can't remove intersection that doesn't exist");
+        for surviving_edge in intersection.edges {
+            let edge = self.edges.get_mut(&surviving_edge).unwrap();
+            let mut updated = false;
+            if edge.src == remove_i {
+                edge.src = new_intersection;
+                // TODO In provenance, should we mark modified cases?
+                edge.linestring
+                    .0
+                    .insert(0, self.intersections[&new_intersection].point.into());
+                updated = true;
+            }
+            if edge.dst == remove_i {
+                edge.dst = new_intersection;
+                edge.linestring
+                    .0
+                    .push(self.intersections[&new_intersection].point.into());
+                updated = true;
+            }
+
+            if updated {
+                self.intersections
+                    .get_mut(&new_intersection)
+                    .unwrap()
+                    .edges
+                    .push(surviving_edge);
+            } else {
+                panic!("replace_intersection saw inconsistent state about an edge connected to an intersection");
+            }
+        }
+    }
 }

@@ -226,55 +226,12 @@ impl RoadBundler {
         );
 
         for i in &face.boundary_intersections {
-            // Remove this intersection, asserting there's one surviving edge and connecting it
-            // instead to the new intersection. That edge is in connecting_edges, but we don't need
-            // that list.
-            replace_intersection(&mut self.graph, *i, new_intersection);
-        }
-    }
-}
-
-fn replace_intersection(
-    graph: &mut Graph,
-    remove_i: IntersectionID,
-    new_intersection: IntersectionID,
-) {
-    let intersection = graph
-        .intersections
-        .remove(&remove_i)
-        .expect("can't remove intersection that doesn't exist");
-    // There could be 0 of these, fine
-    // Usually there's 1
-    // But there could also be multiple -- a roundabout with two roads jutting off from the same
-    // node. Fine.
-    for surviving_edge in intersection.edges {
-        let edge = graph.edges.get_mut(&surviving_edge).unwrap();
-        let mut updated = false;
-        if edge.src == remove_i {
-            edge.src = new_intersection;
-            // TODO In provenance, should we mark modified cases?
-            edge.linestring
-                .0
-                .insert(0, graph.intersections[&new_intersection].point.into());
-            updated = true;
-        }
-        if edge.dst == remove_i {
-            edge.dst = new_intersection;
-            edge.linestring
-                .0
-                .push(graph.intersections[&new_intersection].point.into());
-            updated = true;
-        }
-
-        if updated {
-            graph
-                .intersections
-                .get_mut(&new_intersection)
-                .unwrap()
-                .edges
-                .push(surviving_edge);
-        } else {
-            panic!("replace_intersection saw inconsistent state about an edge connected to an intersection");
+            // Remove this intersection, reconnecting the surviving edges instead to the new
+            // intersection. (Those edges are in connecting_edges, but we don't need that list.)
+            //
+            // Usually there's just 1 surviving edge, but there could be 0, or a roundabout with
+            // two roads jutting off from the same node.
+            self.graph.replace_intersection(*i, new_intersection);
         }
     }
 }

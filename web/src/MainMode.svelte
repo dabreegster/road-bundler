@@ -70,8 +70,12 @@
     $backend!.getBuildings(),
   );
 
-  let tool: "explore" | "collapseToCentroid" | "dualCarriageway" | "sidepath" =
-    "explore";
+  let tool:
+    | "explore"
+    | "collapseToCentroid"
+    | "dualCarriageway"
+    | "sidepath"
+    | "edge" = "explore";
   let undoCount = 0;
 
   let showFaces = true;
@@ -104,6 +108,24 @@
           return;
         }
         $backend!.mergeSidepath(f.properties!.face_id);
+      } else {
+        return;
+      }
+
+      afterMutation();
+      undoCount = undoCount + 1;
+    } catch (err) {
+      window.alert(
+        `You probably have to refresh the app now; something broke: ${err}`,
+      );
+    }
+  }
+
+  function clickEdge(e: CustomEvent<LayerClickInfo>) {
+    try {
+      let f = e.detail.features[0];
+      if (tool == "edge") {
+        $backend!.collapseEdge(f.properties!.edge_id);
       } else {
         return;
       }
@@ -177,6 +199,8 @@
       tool = "dualCarriageway";
     } else if (e.key == "4") {
       tool = "sidepath";
+    } else if (e.key == "5") {
+      tool = "edge";
     } else if (e.key == "s") {
       showSimplified = !showSimplified;
     }
@@ -222,6 +246,7 @@
       <option value="collapseToCentroid">Roundabouts</option>
       <option value="dualCarriageway">Dual carriageways</option>
       <option value="sidepath">Sidepaths</option>
+      <option value="edge">Edges</option>
     </select>
 
     <button class="secondary" on:click={undo} disabled={undoCount == 0}>
@@ -254,6 +279,8 @@
       <button class="secondary" on:click={fixAllSidepaths}>
         Merge all sidepaths
       </button>
+    {:else if tool == "edge"}
+      <p>Click an edge to collapse it</p>
     {/if}
   </div>
 
@@ -337,7 +364,13 @@
         }}
         layout={{ visibility: showFaces ? "visible" : "none" }}
         bind:hovered={tmpHoveredFace}
-        hoverCursor={tool == "explore" ? undefined : "pointer"}
+        hoverCursor={[
+          "collapseToCentroid",
+          "dualCarriageway",
+          "sidepath",
+        ].includes(tool)
+          ? "pointer"
+          : undefined}
         on:click={clickFace}
       />
     </GeoJSON>
@@ -372,6 +405,8 @@
           "line-opacity": showSimplified ? 1 : 0.5,
         }}
         layout={{ visibility: showEdges ? "visible" : "none" }}
+        hoverCursor={tool == "edge" ? "pointer" : undefined}
+        on:click={clickEdge}
       >
         <Popup openOn="hover" let:props>
           {#if props.provenance == "Synthetic"}
