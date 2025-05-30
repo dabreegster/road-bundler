@@ -72,6 +72,7 @@
   let tool: "explore" | "collapseToCentroid" | "dualCarriageway" = "explore";
   let undoCount = 0;
 
+  let showFaces = true;
   let showUrbanBlocks = false;
   let showEdges = true;
   let showIntersections = true;
@@ -263,6 +264,11 @@
         />
 
         <label>
+          <input type="checkbox" bind:checked={showFaces} />
+          Show faces
+        </label>
+
+        <label>
           <input type="checkbox" bind:checked={showUrbanBlocks} />
           Show urban blocks
         </label>
@@ -295,6 +301,7 @@
           "fill-color": faceFillColor,
           "fill-opacity": hoverStateFilter(0.2, 1),
         }}
+        layout={{ visibility: showFaces ? "visible" : "none" }}
         bind:hovered={tmpHoveredFace}
         hoverCursor={tool == "explore" ? undefined : "pointer"}
         on:click={clickFace}

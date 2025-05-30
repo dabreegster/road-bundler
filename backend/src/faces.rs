@@ -73,8 +73,19 @@ pub fn make_faces(graph: &Graph, building_centroids: &Vec<Point>) -> BTreeMap<Fa
         let has_parking_aisle = boundary_edges
             .iter()
             .any(|e| graph.edges[e].is_parking_aisle());
+        let mut num_roads = 0;
+        let mut num_non_roads = 0;
+        for e in &boundary_edges {
+            if graph.edges[e].is_sidewalk_or_cycleway() {
+                num_non_roads += 1;
+            } else {
+                num_roads += 1;
+            }
+        }
         let kind = if num_buildings > 0 || has_parking_aisle {
             FaceKind::UrbanBlock
+        } else if num_roads > 0 && num_non_roads > 0 {
+            FaceKind::SidepathArtifact
         } else {
             FaceKind::RoadArtifact
         };

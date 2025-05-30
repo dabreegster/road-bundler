@@ -5,7 +5,7 @@ use itertools::Itertools;
 use serde::Serialize;
 
 use crate::split_line::Splits;
-use crate::{FaceKind, Debugger, EdgeID, Face, FaceID, Graph, RoadBundler};
+use crate::{Debugger, EdgeID, Face, FaceID, FaceKind, Graph, RoadBundler};
 
 // TODO Don't serialize this. Plumb the extra debug info as foreign members?
 #[derive(Serialize)]

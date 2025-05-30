@@ -42,6 +42,15 @@ impl Edge {
         }
     }
 
+    pub fn is_sidewalk_or_cycleway(&self) -> bool {
+        match self.provenance {
+            EdgeProvenance::OSM { ref tags, .. } => {
+                tags.is_any("highway", vec!["footway", "cycleway"])
+            }
+            EdgeProvenance::Synthetic => false,
+        }
+    }
+
     pub fn get_name(&self) -> Option<&String> {
         match self.provenance {
             EdgeProvenance::OSM { ref tags, .. } => tags.get("name"),
