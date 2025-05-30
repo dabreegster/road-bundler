@@ -36,7 +36,10 @@ pub enum FaceKind {
     SidepathArtifact,
 }
 
-pub fn make_faces(graph: &Graph, building_centroids: &Vec<Point>) -> BTreeMap<FaceID, Face> {
+pub fn make_faces(
+    graph: &Graph,
+    building_centroids: &Vec<Point>,
+) -> (BTreeMap<FaceID, Face>, BTreeMap<EdgeID, Vec<FaceID>>) {
     info!("Splitting {} edges into faces", graph.edges.len());
     let polygons = split_polygon(
         &graph.boundary_polygon,
@@ -105,7 +108,16 @@ pub fn make_faces(graph: &Graph, building_centroids: &Vec<Point>) -> BTreeMap<Fa
             },
         );
     }
-    faces
+
+    let mut edge_to_faces = BTreeMap::new();
+    for (f, face) in &faces {
+        for e in &face.boundary_edges {
+            edge_to_faces.entry(*e).or_insert_with(Vec::new).push(*f);
+        }
+    }
+    // TODO Verify all edges present and have exactly two faces?
+
+    (faces, edge_to_faces)
 }
 
 // TODO Revisit some of this; conversions are now in geo

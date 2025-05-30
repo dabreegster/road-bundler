@@ -40,6 +40,8 @@ pub struct RoadBundler {
     // Derived
     graph: Graph,
     faces: BTreeMap<FaceID, Face>,
+    // Each edge should have two faces
+    edge_to_faces: BTreeMap<EdgeID, Vec<FaceID>>,
 }
 
 #[wasm_bindgen]
@@ -64,7 +66,8 @@ impl RoadBundler {
             building_centroids.extend(polygon.centroid());
         }
 
-        let faces = make_faces(&graph, &building_centroids);
+        let (faces, edge_to_faces) = make_faces(&graph, &building_centroids);
+
         Ok(Self {
             original_graph: graph.clone(),
             building_centroids,
@@ -72,6 +75,7 @@ impl RoadBundler {
 
             graph,
             faces,
+            edge_to_faces,
         })
     }
 
@@ -140,7 +144,9 @@ impl RoadBundler {
     pub fn undo(&mut self) {
         self.commands.pop();
         self.graph = self.original_graph.clone();
-        self.faces = make_faces(&self.graph, &self.building_centroids);
+        let (faces, edge_to_faces) = make_faces(&self.graph, &self.building_centroids);
+        self.faces = faces;
+        self.edge_to_faces = edge_to_faces;
 
         for cmd in self.commands.clone() {
             self.apply_cmd(cmd);
@@ -220,7 +226,9 @@ impl RoadBundler {
             Command::CollapseDualCarriageway(face) => self.collapse_dual_carriageway(face),
             Command::MergeSidepath(face) => self.merge_sidepath(face),
         }
-        self.faces = make_faces(&self.graph, &self.building_centroids);
+        let (faces, edge_to_faces) = make_faces(&self.graph, &self.building_centroids);
+        self.faces = faces;
+        self.edge_to_faces = edge_to_faces;
     }
 }
 

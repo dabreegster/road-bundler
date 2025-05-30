@@ -1,4 +1,4 @@
-use crate::{FaceID, RoadBundler};
+use crate::{FaceID, FaceKind, RoadBundler};
 
 impl RoadBundler {
     pub fn merge_sidepath(&mut self, id: FaceID) {
@@ -6,7 +6,14 @@ impl RoadBundler {
 
         for e in &face.boundary_edges {
             if self.graph.edges[e].is_sidewalk_or_cycleway() {
-                self.graph.remove_edge(*e);
+                // If the edge is helping to form another SidewalkArtifact, don't remove it yet
+                let num_sidepath_faces = self.edge_to_faces[e]
+                    .iter()
+                    .filter(|f| self.faces[f].kind == FaceKind::SidepathArtifact)
+                    .count();
+                if num_sidepath_faces == 1 {
+                    self.graph.remove_edge(*e);
+                }
             }
         }
 
