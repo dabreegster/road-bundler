@@ -69,7 +69,8 @@
     $backend!.getBuildings(),
   );
 
-  let tool: "explore" | "collapseToCentroid" | "dualCarriageway" = "explore";
+  let tool: "explore" | "collapseToCentroid" | "dualCarriageway" | "sidepath" =
+    "explore";
   let undoCount = 0;
 
   let showFaces = true;
@@ -96,6 +97,12 @@
           return;
         }
         $backend!.collapseDualCarriageway(f.properties!.face_id);
+      } else if (tool == "sidepath") {
+        if (f.properties!.kind != "SidepathArtifact") {
+          window.alert("This isn't a sidepath face");
+          return;
+        }
+        $backend!.mergeSidepath(f.properties!.face_id);
       } else {
         return;
       }
@@ -135,6 +142,19 @@
     }
   }
 
+  function fixAllSidepaths() {
+    try {
+      let newCommands = $backend!.fixAllSidepaths();
+
+      afterMutation();
+      undoCount = undoCount + newCommands;
+    } catch (err) {
+      window.alert(
+        `You probably have to refresh the app now; something broke: ${err}`,
+      );
+    }
+  }
+
   function afterMutation() {
     edges = JSON.parse($backend!.getEdges());
     intersections = JSON.parse($backend!.getIntersections());
@@ -154,6 +174,8 @@
       tool = "collapseToCentroid";
     } else if (e.key == "3") {
       tool = "dualCarriageway";
+    } else if (e.key == "4") {
+      tool = "sidepath";
     } else if (e.key == "s") {
       showSimplified = !showSimplified;
     }
@@ -198,6 +220,7 @@
       <option value="explore">Explore the map</option>
       <option value="collapseToCentroid">Roundabouts</option>
       <option value="dualCarriageway">Dual carriageways</option>
+      <option value="sidepath">Sidepaths</option>
     </select>
 
     <button class="secondary" on:click={undo} disabled={undoCount == 0}>
@@ -224,6 +247,12 @@
           <p>Bearings: {dc.bearings.map((b) => Math.round(b)).join(", ")}</p>
         {/if}
       {/if}
+    {:else if tool == "sidepath"}
+      <p>Click to merge a sidepath into the road</p>
+
+      <button class="secondary" on:click={fixAllSidepaths}>
+        Merge all sidepaths
+      </button>
     {/if}
   </div>
 

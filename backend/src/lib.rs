@@ -25,6 +25,7 @@ mod faces;
 mod graph;
 mod join_lines;
 mod scrape_buildings;
+mod sidepath;
 mod slice_nearest_boundary;
 mod split_line;
 
@@ -179,6 +180,36 @@ impl RoadBundler {
 
         cmds_applied
     }
+
+    #[wasm_bindgen(js_name = mergeSidepath)]
+    pub fn merge_sidepath_wasm(&mut self, id: usize) {
+        let cmd = Command::MergeSidepath(FaceID(id));
+        self.commands.push(cmd);
+        self.apply_cmd(cmd);
+    }
+
+    /// Returns the number of new commands applied
+    #[wasm_bindgen(js_name = fixAllSidepaths)]
+    pub fn fix_all_sidepaths(&mut self) -> usize {
+        let mut cmds_applied = 0;
+
+        loop {
+            if let Some((id, _)) = self
+                .faces
+                .iter()
+                .find(|(_, face)| face.kind == FaceKind::SidepathArtifact)
+            {
+                let cmd = Command::MergeSidepath(*id);
+                self.commands.push(cmd);
+                self.apply_cmd(cmd);
+                cmds_applied += 1;
+            } else {
+                break;
+            }
+        }
+
+        cmds_applied
+    }
 }
 
 impl RoadBundler {
@@ -186,6 +217,7 @@ impl RoadBundler {
         match cmd {
             Command::CollapseToCentroid(face) => self.collapse_to_centroid(face),
             Command::CollapseDualCarriageway(face) => self.collapse_dual_carriageway(face),
+            Command::MergeSidepath(face) => self.merge_sidepath(face),
         }
         self.faces = make_faces(&self.graph, &self.building_centroids);
     }
@@ -196,6 +228,7 @@ impl RoadBundler {
 pub enum Command {
     CollapseToCentroid(FaceID),
     CollapseDualCarriageway(FaceID),
+    MergeSidepath(FaceID),
 }
 
 fn err_to_js<E: std::fmt::Display>(err: E) -> JsValue {
