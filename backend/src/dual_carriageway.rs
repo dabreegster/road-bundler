@@ -23,16 +23,18 @@ impl DualCarriageway {
     pub fn maybe_new(graph: &Graph, face: &Face) -> Result<Self> {
         let (name, dc_edges) = detect_dc_edges(graph, face)?;
 
-        let bearings: Vec<f64> = dc_edges
-            .iter()
-            .map(|e| linestring_bearing(&graph.edges[e].linestring))
+        let mut edge_bearings: Vec<(EdgeID, f64)> = dc_edges
+            .into_iter()
+            .map(|e| (e, linestring_bearing(&graph.edges[&e].linestring)))
             .collect();
-        let clusters = classify_bearings(&bearings);
+        edge_bearings.sort_by_key(|(_, x)| (*x * 10e5) as usize);
+        let bearings: Vec<f64> = edge_bearings.iter().map(|(_, x)| *x).collect();
+        let classes = classify_bearings(bearings.clone());
 
         let mut side1 = Vec::new();
         let mut side2 = Vec::new();
-        for (e, cluster) in dc_edges.into_iter().zip(clusters.into_iter()) {
-            if cluster == 0 {
+        for ((e, _), class) in edge_bearings.into_iter().zip(classes.into_iter()) {
+            if class == 0 {
                 side1.push(e);
             } else {
                 side2.push(e);
@@ -166,21 +168,28 @@ fn linestring_bearing(linestring: &LineString) -> f64 {
     euclidean_bearing(pt1, pt2)
 }
 
-fn classify_bearings(bearings: &Vec<f64>) -> Vec<usize> {
-    let min = bearings
-        .iter()
-        .min_by_key(|x| (*x * 100.0) as usize)
-        .unwrap();
-    let max = bearings
-        .iter()
-        .max_by_key(|x| (*x * 100.0) as usize)
-        .unwrap();
-    let range = max - min;
-    let threshold = min + (range / 2.0);
-    bearings
-        .iter()
-        .map(|b| if *b < threshold { 0 } else { 1 })
-        .collect()
+// Assumes input is sorted
+fn classify_bearings(bearings: Vec<f64>) -> Vec<usize> {
+    let mut classes = Vec::new();
+
+    let mut last_class = 0;
+    let mut last_bearing = 0.0;
+    for bearing in bearings {
+        if classes.is_empty() {
+            last_bearing = bearing;
+            classes.push(0);
+            continue;
+        }
+
+        // Simple heuristic that passes all tests so far, and handles wraparound cases
+        if (bearing - last_bearing).abs() > 45.0 {
+            last_class = if last_class == 0 { 1 } else { 0 };
+        }
+        last_bearing = bearing;
+        classes.push(last_class);
+    }
+
+    classes
 }
 
 impl RoadBundler {
@@ -252,8 +261,8 @@ mod tests {
             // Wrap around angle case
             (vec![1, 179, 184, 352, 353, 359], vec![0, 1, 1, 0, 0, 0]),
         ] {
-            let got1 = classify_bearings(&input.iter().map(|b| *b as f64).collect());
-            // Clusters 0 and 1 are arbitrary; the opposite is also fine
+            let got1 = classify_bearings(input.iter().map(|b| *b as f64).collect());
+            // Classes 0 and 1 are arbitrary; the opposite is also fine
             let got2: Vec<usize> = got1.iter().map(|c| if *c == 0 { 1 } else { 0 }).collect();
             if got1 != expected && got2 != expected {
                 panic!("For bearings {input:?},\n  got  {got1:?}\n  want {expected:?}");
