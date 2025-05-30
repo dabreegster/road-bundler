@@ -219,6 +219,25 @@ impl RoadBundler {
         self.commands.push(cmd);
         self.apply_cmd(cmd);
     }
+
+    /// Returns the number of new commands applied
+    #[wasm_bindgen(js_name = fixAllDogLegs)]
+    pub fn fix_all_dog_legs(&mut self) -> usize {
+        let mut cmds_applied = 0;
+
+        loop {
+            if let Some(id) = self.graph.edges.keys().find(|e| self.is_dog_leg(**e)) {
+                let cmd = Command::CollapseEdge(*id);
+                self.commands.push(cmd);
+                self.apply_cmd(cmd);
+                cmds_applied += 1;
+            } else {
+                break;
+            }
+        }
+
+        cmds_applied
+    }
 }
 
 impl RoadBundler {

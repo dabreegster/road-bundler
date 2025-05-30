@@ -1,4 +1,4 @@
-use geo::{Euclidean, InterpolatableLine};
+use geo::{Euclidean, InterpolatableLine, Length};
 
 use crate::{EdgeID, Intersection, IntersectionProvenance, RoadBundler};
 
@@ -31,5 +31,15 @@ impl RoadBundler {
         // overlap at the ends
         self.graph.replace_intersection(src, new_intersection);
         self.graph.replace_intersection(dst, new_intersection);
+    }
+
+    pub fn is_dog_leg(&self, e: EdgeID) -> bool {
+        let edge = &self.graph.edges[&e];
+        if Euclidean.length(&edge.linestring) > 5.0 {
+            return false;
+        }
+        // TODO And the two "side roads" are on opposite sides
+        self.graph.intersections[&edge.src].edges.len() == 3
+            && self.graph.intersections[&edge.dst].edges.len() == 3
     }
 }

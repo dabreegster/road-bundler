@@ -178,6 +178,19 @@
     }
   }
 
+  function fixAllDogLegs() {
+    try {
+      let newCommands = $backend!.fixAllDogLegs();
+
+      afterMutation();
+      undoCount = undoCount + newCommands;
+    } catch (err) {
+      window.alert(
+        `You probably have to refresh the app now; something broke: ${err}`,
+      );
+    }
+  }
+
   function afterMutation() {
     edges = JSON.parse($backend!.getEdges());
     intersections = JSON.parse($backend!.getIntersections());
@@ -281,6 +294,10 @@
       </button>
     {:else if tool == "edge"}
       <p>Click an edge to collapse it</p>
+
+      <button class="secondary" on:click={fixAllDogLegs}>
+        Collapse all dog-leg intersections
+      </button>
     {/if}
   </div>
 
