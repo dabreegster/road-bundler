@@ -49,6 +49,7 @@
           };
         }
       | "Synthetic";
+    is_road: boolean;
   }
 
   interface IntersectionProps {
@@ -309,7 +310,8 @@
 
         <QualitativeLegend
           labelColors={{
-            "OSM edge": "black",
+            "OSM road edge": "black",
+            "OSM sidewalk/cycleway edge": "grey",
             "OSM intersection": "green",
             "synthetic edge": "orange",
             "synthetic intersection": "pink",
@@ -363,7 +365,9 @@
             "case",
             ["==", ["get", "provenance"], "Synthetic"],
             "orange",
+            ["get", "is_road"],
             "black",
+            "grey",
           ],
           "line-opacity": showSimplified ? 1 : 0.5,
         }}

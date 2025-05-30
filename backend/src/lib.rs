@@ -85,6 +85,7 @@ impl RoadBundler {
                 "provenance",
                 serde_json::to_value(&edge.provenance).map_err(err_to_js)?,
             );
+            f.set_property("is_road", !edge.is_sidewalk_or_cycleway());
             features.push(f);
         }
         serde_json::to_string(&GeoJson::from(features)).map_err(err_to_js)

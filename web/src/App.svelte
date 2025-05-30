@@ -57,7 +57,7 @@
     });
   }
 
-  let basemap: "osm" | "dataviz" = "osm";
+  let basemap: "osm" | "dataviz" = "dataviz";
   let basemaps = {
     osm: "https://api.maptiler.com/maps/openstreetmap/style.json?key=MZEJTanw3WpxRvt7qDfo",
     dataviz:
