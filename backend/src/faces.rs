@@ -159,7 +159,8 @@ fn linestring_along_polygon(ls: &LineString, polygon: &Polygon) -> bool {
     let (slice1, slice2) = polygon.slice_near_endpoints(ls);
 
     // TODO Pick the more appropriate slice, using length?
-    midpoint_distance(ls, &slice1) <= 1.0 || midpoint_distance(ls, &slice2) <= 1.0
+    let threshold = 1.5;
+    midpoint_distance(ls, &slice1) <= threshold || midpoint_distance(ls, &slice2) <= threshold
 }
 
 // Distance in meters between the middle of each linestring. Because ls1 and ls2 might point
@@ -303,5 +304,18 @@ impl Face {
             Err(err) => f.set_property("dual_carriageway", err.to_string()),
         }
         f
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use geo::wkt;
+
+    #[test]
+    fn test_linestring_along_polygon() {
+        let polygon = wkt!(POLYGON((190.27018273197035 40.652921341231966,190.64442074619154 48.99255242185941,190.76417696796278 53.86289682226529,195.98105752788405 65.92756309347502,200.80124533496718 54.8858915789639,200.82369983516554 49.55964722471585,200.8087302478395 41.15329923467984,200.50185478053908 32.35776843862882,200.09767759166579 23.962539814284945,195.78645360790114 17.746734760574007,190.76417696796278 25.408075950912142,190.49472558818678 33.10277547674527,190.27018273197035 40.652921341231966)));
+        let ls = wkt!(LINESTRING(190.27018264451632 40.65292133361041,190.64442083873556 48.99255235061214,190.76417706118355 53.862896864869825,195.98105748674922 65.92756307056125));
+        assert!(linestring_along_polygon(&ls, &polygon));
     }
 }
