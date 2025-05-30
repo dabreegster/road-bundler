@@ -21,7 +21,7 @@
     Point,
   } from "geojson";
   import { isLine, isPoint, emptyGeojson, Popup } from "svelte-utils/map";
-  import { PropertiesTable, QualitativeLegend, notNull } from "svelte-utils";
+  import { PropertiesTable, QualitativeLegend } from "svelte-utils";
 
   interface FaceProps {
     face_id: number;
@@ -87,12 +87,15 @@
 
   function clickFace(e: CustomEvent<LayerClickInfo>) {
     try {
+      let f = e.detail.features[0];
       if (tool == "collapseToCentroid") {
-        $backend!.collapseToCentroid(e.detail.features[0].properties!.face_id);
+        $backend!.collapseToCentroid(f.properties!.face_id);
       } else if (tool == "dualCarriageway") {
-        $backend!.collapseDualCarriageway(
-          e.detail.features[0].properties!.face_id,
-        );
+        if (!f.properties!.dual_carriageway.startsWith("{")) {
+          window.alert("This isn't a dual carriageway face");
+          return;
+        }
+        $backend!.collapseDualCarriageway(f.properties!.face_id);
       } else {
         return;
       }
@@ -366,28 +369,30 @@
       />
     </GeoJSON>
 
-    <GeoJSON data={JSON.parse(notNull($backend).getOriginalOsmGraph())}>
-      <LineLayer
-        id="original-edges"
-        beforeId="Road labels"
-        filter={isLine}
-        paint={{
-          "line-width": 5,
-          "line-color": "black",
-        }}
-        layout={{ visibility: !showSimplified ? "visible" : "none" }}
-      />
+    {#if $backend}
+      <GeoJSON data={JSON.parse($backend.getOriginalOsmGraph())}>
+        <LineLayer
+          id="original-edges"
+          beforeId="Road labels"
+          filter={isLine}
+          paint={{
+            "line-width": 5,
+            "line-color": "black",
+          }}
+          layout={{ visibility: !showSimplified ? "visible" : "none" }}
+        />
 
-      <CircleLayer
-        id="original-intersections"
-        filter={isPoint}
-        paint={{
-          "circle-color": "green",
-          "circle-radius": 7,
-        }}
-        layout={{ visibility: !showSimplified ? "visible" : "none" }}
-      />
-    </GeoJSON>
+        <CircleLayer
+          id="original-intersections"
+          filter={isPoint}
+          paint={{
+            "circle-color": "green",
+            "circle-radius": 7,
+          }}
+          layout={{ visibility: !showSimplified ? "visible" : "none" }}
+        />
+      </GeoJSON>
+    {/if}
 
     <DebuggerLayer data={debugFace(hoveredFace, tool)} />
   </div>
