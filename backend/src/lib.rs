@@ -15,7 +15,7 @@ use utils::Tags;
 use wasm_bindgen::prelude::*;
 
 use crate::debugger::Debugger;
-use crate::faces::{make_faces, Face, FaceID};
+use crate::faces::{make_faces, Face, FaceID, FaceKind};
 use crate::graph::{EdgeID, Graph, Intersection, IntersectionID, IntersectionProvenance};
 
 mod average_lines;

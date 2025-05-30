@@ -5,7 +5,7 @@ use itertools::Itertools;
 use serde::Serialize;
 
 use crate::split_line::Splits;
-use crate::{Debugger, EdgeID, Face, FaceID, Graph, RoadBundler};
+use crate::{FaceKind, Debugger, EdgeID, Face, FaceID, Graph, RoadBundler};
 
 // TODO Don't serialize this. Plumb the extra debug info as foreign members?
 #[derive(Serialize)]
@@ -116,8 +116,8 @@ impl DualCarriageway {
 }
 
 fn detect_dc_edges(graph: &Graph, face: &Face) -> Result<(String, Vec<EdgeID>)> {
-    if face.is_urban_block {
-        bail!("Face is an urban block");
+    if face.kind != FaceKind::RoadArtifact {
+        bail!("Face isn't a road artifact");
     }
 
     // Find all of the oneway edges with a name

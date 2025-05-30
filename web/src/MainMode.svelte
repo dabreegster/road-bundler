@@ -26,7 +26,7 @@
   interface FaceProps {
     face_id: number;
     debug_hover: FeatureCollection;
-    is_urban_block: boolean;
+    kind: "UrbanBlock" | "RoadArtifact" | "SidepathArtifact";
 
     dual_carriageway:
       | {
@@ -176,8 +176,10 @@
   // TS fail
   $: faceFillColor = [
     "case",
-    ["get", "is_urban_block"],
+    ["==", ["get", "kind"], "UrbanBlock"],
     "purple",
+    ["==", ["get", "kind"], "SidepathArtifact"],
+    "yellow",
     ["!=", ["typeof", ["get", "dual_carriageway"]], "string"],
     tool == "dualCarriageway" ? "blue" : "cyan",
     "cyan",
@@ -232,10 +234,7 @@
           how simplified graph
         </label>
 
-        <label>
-          <input type="checkbox" bind:checked={showUrbanBlocks} />
-          Show urban blocks
-        </label>
+        <br />
 
         <label>
           <input type="checkbox" bind:checked={showEdges} />
@@ -253,6 +252,23 @@
         </label>
 
         <hr />
+
+        <QualitativeLegend
+          labelColors={{
+            "urban block": "purple",
+            "road artifact": "cyan",
+            "sidepath artifact": "yellow",
+          }}
+          itemsPerRow={3}
+        />
+
+        <label>
+          <input type="checkbox" bind:checked={showUrbanBlocks} />
+          Show urban blocks
+        </label>
+
+        <hr />
+
         <QualitativeLegend
           labelColors={{
             "OSM edge": "black",
@@ -272,7 +288,9 @@
         id="faces"
         beforeId="Road labels"
         manageHoverState
-        filter={showUrbanBlocks ? undefined : ["!", ["get", "is_urban_block"]]}
+        filter={showUrbanBlocks
+          ? undefined
+          : ["!=", ["get", "kind"], "UrbanBlock"]}
         paint={{
           "fill-color": faceFillColor,
           "fill-opacity": hoverStateFilter(0.2, 1),

@@ -19,10 +19,21 @@ pub struct FaceID(pub usize);
 
 pub struct Face {
     pub polygon: Polygon,
+    pub kind: FaceKind,
     pub boundary_edges: Vec<EdgeID>,
     pub boundary_intersections: Vec<IntersectionID>,
     pub connecting_edges: Vec<EdgeID>,
-    pub is_urban_block: bool,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum FaceKind {
+    /// Should be not be simplified. There are buildings or real land uses inside. This also
+    /// includes parking aisles.
+    UrbanBlock,
+    /// This is a candidate for being simplified
+    RoadArtifact,
+    /// The space between a road and a sidewalk or cyclepath
+    SidepathArtifact,
 }
 
 pub fn make_faces(graph: &Graph, building_centroids: &Vec<Point>) -> BTreeMap<FaceID, Face> {
@@ -62,17 +73,21 @@ pub fn make_faces(graph: &Graph, building_centroids: &Vec<Point>) -> BTreeMap<Fa
         let has_parking_aisle = boundary_edges
             .iter()
             .any(|e| graph.edges[e].is_parking_aisle());
-        let is_urban_block = num_buildings > 0 || has_parking_aisle;
+        let kind = if num_buildings > 0 || has_parking_aisle {
+            FaceKind::UrbanBlock
+        } else {
+            FaceKind::RoadArtifact
+        };
 
         let id = FaceID(faces.len());
         faces.insert(
             id,
             Face {
                 polygon,
+                kind,
                 boundary_edges,
                 boundary_intersections,
                 connecting_edges,
-                is_urban_block,
             },
         );
     }
@@ -268,7 +283,7 @@ impl Face {
         let mut f = graph.mercator.to_wgs84_gj(&self.polygon);
         f.set_property("face_id", id.0);
         f.set_property("debug_hover", debug_hover.build());
-        f.set_property("is_urban_block", self.is_urban_block);
+        f.set_property("kind", format!("{:?}", self.kind));
         match crate::dual_carriageway::DualCarriageway::maybe_new(graph, self) {
             Ok(dc) => f.set_property("dual_carriageway", serde_json::to_value(&dc).unwrap()),
             Err(err) => f.set_property("dual_carriageway", err.to_string()),
