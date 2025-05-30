@@ -82,10 +82,13 @@ pub fn make_faces(graph: &Graph, building_centroids: &Vec<Point>) -> BTreeMap<Fa
                 num_roads += 1;
             }
         }
-        let kind = if num_buildings > 0 || has_parking_aisle {
+        let kind = if num_buildings > 0 {
             FaceKind::UrbanBlock
         } else if num_roads > 0 && num_non_roads > 0 {
             FaceKind::SidepathArtifact
+        } else if has_parking_aisle {
+            // Order matters -- sidepaths next to a parking aisle count as SidepathArtifact
+            FaceKind::UrbanBlock
         } else {
             FaceKind::RoadArtifact
         };
