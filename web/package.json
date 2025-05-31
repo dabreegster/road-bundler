@@ -13,6 +13,7 @@
     "fmt": "npx prettier --write *.html src/**"
   },
   "devDependencies": {
+    "@fortawesome/fontawesome-free": "^6.7.2",
     "@ianvs/prettier-plugin-sort-imports": "^4.1.1",
     "@sveltejs/vite-plugin-svelte": "^2.5.3",
     "@tsconfig/svelte": "^5.0.2",

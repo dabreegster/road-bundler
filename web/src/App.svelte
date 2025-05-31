@@ -1,4 +1,5 @@
 <script lang="ts">
+  import "@fortawesome/fontawesome-free/css/all.min.css";
   import favicon from "../assets/favicon.ico?url";
   import { MapLibre, Control } from "svelte-maplibre";
   import { PolygonToolLayer } from "maplibre-draw-polygon";
@@ -90,7 +91,13 @@
     <h1>Road bundler</h1>
 
     {#if $backend}
-      <button on:click={() => ($backend = null)}>Load another area</button>
+      <div>
+        <button class="secondary" on:click={() => ($backend = null)}>
+          Load another area
+        </button>
+      </div>
+
+      <br />
     {:else if map}
       <label>
         Load an osm.pbf or osm.xml file

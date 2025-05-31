@@ -1,7 +1,8 @@
 <script lang="ts">
   import DebuggerLayer from "./DebuggerLayer.svelte";
   import DebuggerLegend from "./DebuggerLegend.svelte";
-  import { backend } from "./";
+  import ToolSwitcher from "./ToolSwitcher.svelte";
+  import { backend, type Tool } from "./";
   import { SplitComponent } from "svelte-utils/two_column_layout";
   import {
     GeoJSON,
@@ -70,12 +71,7 @@
     $backend!.getBuildings(),
   );
 
-  let tool:
-    | "explore"
-    | "collapseToCentroid"
-    | "dualCarriageway"
-    | "sidepath"
-    | "edge" = "explore";
+  let tool: Tool = "explore";
   let undoCount = 0;
 
   let showFaces = true;
@@ -204,17 +200,7 @@
       undo();
     }
 
-    if (e.key == "1") {
-      tool = "explore";
-    } else if (e.key == "2") {
-      tool = "collapseToCentroid";
-    } else if (e.key == "3") {
-      tool = "dualCarriageway";
-    } else if (e.key == "4") {
-      tool = "sidepath";
-    } else if (e.key == "5") {
-      tool = "edge";
-    } else if (e.key == "s") {
+    if (e.key == "s") {
       showSimplified = !showSimplified;
     }
   }
@@ -254,17 +240,14 @@
 
 <SplitComponent>
   <div slot="sidebar">
-    <select bind:value={tool}>
-      <option value="explore">Explore the map</option>
-      <option value="collapseToCentroid">Roundabouts</option>
-      <option value="dualCarriageway">Dual carriageways</option>
-      <option value="sidepath">Sidepaths</option>
-      <option value="edge">Edges</option>
-    </select>
+    <div>
+      <button class="secondary" on:click={undo} disabled={undoCount == 0}>
+        Undo ({undoCount})
+      </button>
+    </div>
+    <br />
 
-    <button class="secondary" on:click={undo} disabled={undoCount == 0}>
-      Undo ({undoCount})
-    </button>
+    <ToolSwitcher bind:tool />
 
     {#if tool == "explore"}
       <p>Just pan around the map</p>
@@ -273,7 +256,7 @@
     {:else if tool == "dualCarriageway"}
       <p>Click to collapse a dual carriageway</p>
 
-      <button class="secondary" on:click={fixAllDCs}>Collapse all DCs</button>
+      <button class="outline" on:click={fixAllDCs}>Collapse all DCs</button>
 
       {#if hoveredFace}
         {#if typeof hoveredFace.properties.dual_carriageway == "string"}
@@ -289,13 +272,13 @@
     {:else if tool == "sidepath"}
       <p>Click to merge a sidepath into the road</p>
 
-      <button class="secondary" on:click={fixAllSidepaths}>
+      <button class="outline" on:click={fixAllSidepaths}>
         Merge all sidepaths
       </button>
     {:else if tool == "edge"}
       <p>Click an edge to collapse it</p>
 
-      <button class="secondary" on:click={fixAllDogLegs}>
+      <button class="outline" on:click={fixAllDogLegs}>
         Collapse all dog-leg intersections
       </button>
     {/if}
