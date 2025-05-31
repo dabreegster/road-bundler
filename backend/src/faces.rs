@@ -260,6 +260,10 @@ impl Face {
             Ok(dc) => f.set_property("dual_carriageway", serde_json::to_value(&dc).unwrap()),
             Err(err) => f.set_property("dual_carriageway", err.to_string()),
         }
+        match crate::sidepath::detect_sidepath(graph, self) {
+            Ok(gj) => f.set_property("sidepath", serde_json::to_value(&gj).unwrap()),
+            Err(err) => f.set_property("sidepath", err.to_string()),
+        }
         f
     }
 }

@@ -273,7 +273,7 @@ fn keep_edge(tags: &Tags) -> bool {
         return false;
     }
     if tags.is_any("highway", vec!["footway", "cycleway"]) {
-        return false;
+        //return false;
     }
     true
 }

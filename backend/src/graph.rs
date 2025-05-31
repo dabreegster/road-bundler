@@ -51,6 +51,16 @@ impl Edge {
         }
     }
 
+    pub fn is_crossing(&self) -> bool {
+        match self.provenance {
+            EdgeProvenance::OSM { ref tags, .. } => {
+                tags.is_any("footway", vec!["crossing", "traffic_island"])
+                    || tags.is("cycleway", "crossing")
+            }
+            EdgeProvenance::Synthetic => false,
+        }
+    }
+
     pub fn get_name(&self) -> Option<&String> {
         match self.provenance {
             EdgeProvenance::OSM { ref tags, .. } => tags.get("name"),

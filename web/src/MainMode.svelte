@@ -35,6 +35,7 @@
           debug_hover: FeatureCollection;
         }
       | string;
+    sidepath: FeatureCollection | string;
   }
 
   interface EdgeProps {
@@ -121,7 +122,13 @@
   function clickEdge(e: CustomEvent<LayerClickInfo>) {
     try {
       let f = e.detail.features[0];
-      if (tool == "edge") {
+      if (tool == "explore") {
+        if (f.properties!.provenance != "Synthetic") {
+          let way = JSON.parse(f.properties!.provenance).OSM.way;
+          window.open(`https://www.openstreetmap.org/way/${way}`, "_blank");
+        }
+        return;
+      } else if (tool == "edge") {
         $backend!.collapseEdge(f.properties!.edge_id);
       } else {
         return;
@@ -210,16 +217,24 @@
     hoveredFace: Feature<Polygon, FaceProps> | null,
     tool: string,
   ): FeatureCollection {
-    if (tool != "dualCarriageway" && hoveredFace) {
+    if (!hoveredFace) {
+      return emptyGeojson();
+    }
+
+    if (tool == "explore" || tool == "collapseToCentroid") {
       return hoveredFace.properties.debug_hover;
     }
 
     if (
       tool == "dualCarriageway" &&
-      hoveredFace &&
       typeof hoveredFace.properties.dual_carriageway != "string"
     ) {
       return hoveredFace.properties.dual_carriageway.debug_hover;
+    } else if (
+      tool == "sidepath" &&
+      typeof hoveredFace.properties.sidepath != "string"
+    ) {
+      return hoveredFace.properties.sidepath;
     }
     return emptyGeojson();
   }
@@ -345,6 +360,8 @@
           }}
           itemsPerRow={1}
         />
+
+        <hr />
 
         <DebuggerLegend data={debugFace(hoveredFace, tool)} />
       </div>
