@@ -38,8 +38,27 @@ impl RoadBundler {
         if Euclidean.length(&edge.linestring) > 5.0 {
             return false;
         }
-        // TODO And the two "side roads" are on opposite sides
-        self.graph.intersections[&edge.src].edges.len() == 3
-            && self.graph.intersections[&edge.dst].edges.len() == 3
+        let mut src_edges = self.graph.intersections[&edge.src].edges.clone();
+        let mut dst_edges = self.graph.intersections[&edge.dst].edges.clone();
+        if src_edges.len() != 3 || dst_edges.len() != 3 {
+            return false;
+        }
+
+        // Find the two "side roads" with a different name than the short edge
+        // (We could use angle to be safer than name)
+        src_edges.retain(|x| self.graph.edges[x].get_name() != edge.get_name());
+        dst_edges.retain(|x| self.graph.edges[x].get_name() != edge.get_name());
+
+        if src_edges.len() != 1 || dst_edges.len() != 1 {
+            return false;
+        }
+
+        let src_edge = &self.graph.edges[&src_edges[0]];
+        let dst_edge = &self.graph.edges[&dst_edges[0]];
+        // TODO Are these on "different sides" of the short edge?
+        // Orient the linestrings to point towards edge.src and edge.dst
+        // If the bearings are roughly opposite, then different sides
+
+        true
     }
 }
