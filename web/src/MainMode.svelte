@@ -182,6 +182,19 @@
     }
   }
 
+  function removeAllSidepaths() {
+    try {
+      $backend!.removeAllSidepaths();
+
+      afterMutation();
+      undoCount += 1;
+    } catch (err) {
+      window.alert(
+        `You probably have to refresh the app now; something broke: ${err}`,
+      );
+    }
+  }
+
   function fixAllDogLegs() {
     try {
       let newCommands = $backend!.fixAllDogLegs();
@@ -289,6 +302,10 @@
 
       <button class="outline" on:click={fixAllSidepaths}>
         Merge all sidepaths
+      </button>
+
+      <button class="outline" on:click={removeAllSidepaths}>
+        Remove all sidepaths
       </button>
     {:else if tool == "edge"}
       <p>Click an edge to collapse it</p>

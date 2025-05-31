@@ -56,6 +56,30 @@ pub fn detect_sidepath(graph: &Graph, face: &Face) -> Result<GeoJson> {
 }
 
 impl RoadBundler {
+    pub fn remove_all_sidepaths(&mut self) {
+        let remove_edges: Vec<_> = self
+            .graph
+            .edges
+            .iter()
+            .filter(|(_, edge)| edge.is_sidewalk_or_cycleway())
+            .map(|(id, _)| *id)
+            .collect();
+        for e in remove_edges {
+            self.graph.remove_edge(e);
+        }
+
+        let remove_intersections: Vec<_> = self
+            .graph
+            .intersections
+            .iter()
+            .filter(|(_, i)| i.edges.is_empty())
+            .map(|(id, _)| *id)
+            .collect();
+        for i in remove_intersections {
+            self.graph.remove_empty_intersection(i);
+        }
+    }
+
     pub fn merge_sidepath(&mut self, id: FaceID) {
         let face = &self.faces[&id];
 

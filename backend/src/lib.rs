@@ -216,6 +216,13 @@ impl RoadBundler {
         cmds_applied
     }
 
+    #[wasm_bindgen(js_name = removeAllSidepaths)]
+    pub fn remove_all_sidepaths_wasm(&mut self) {
+        let cmd = Command::RemoveAllSidepaths;
+        self.commands.push(cmd);
+        self.apply_cmd(cmd);
+    }
+
     #[wasm_bindgen(js_name = collapseEdge)]
     pub fn collapse_edge_wasm(&mut self, id: usize) {
         let cmd = Command::CollapseEdge(EdgeID(id));
@@ -250,6 +257,7 @@ impl RoadBundler {
             Command::CollapseDualCarriageway(face) => self.collapse_dual_carriageway(face),
             Command::MergeSidepath(face) => self.merge_sidepath(face),
             Command::CollapseEdge(edge) => self.collapse_edge(edge),
+            Command::RemoveAllSidepaths => self.remove_all_sidepaths(),
         }
         self.faces = make_faces(&self.graph, &self.building_centroids);
     }
@@ -261,6 +269,7 @@ pub enum Command {
     CollapseToCentroid(FaceID),
     CollapseDualCarriageway(FaceID),
     MergeSidepath(FaceID),
+    RemoveAllSidepaths,
     CollapseEdge(EdgeID),
 }
 
@@ -271,9 +280,6 @@ fn err_to_js<E: std::fmt::Display>(err: E) -> JsValue {
 fn keep_edge(tags: &Tags) -> bool {
     if !tags.has("highway") || tags.is("highway", "proposed") || tags.is("area", "yes") {
         return false;
-    }
-    if tags.is_any("highway", vec!["footway", "cycleway"]) {
-        //return false;
     }
     true
 }
