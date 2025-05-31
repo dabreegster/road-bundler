@@ -1,10 +1,12 @@
 use anyhow::{Context, Result};
-use geo::{Coord, Distance, Euclidean, Line, LineString};
+use geo::{Distance, Euclidean, LineString};
 use geojson::GeoJson;
 use itertools::Itertools;
 use serde::Serialize;
 
-use crate::geo_helpers::{average_linestrings, collapse_degree_2, KeyedLineString};
+use crate::geo_helpers::{
+    average_linestrings, collapse_degree_2, linestring_bearing, KeyedLineString,
+};
 use crate::split_line::Splits;
 use crate::{Debugger, EdgeID, Face, FaceID, FaceKind, Graph, RoadBundler};
 
@@ -12,7 +14,6 @@ use crate::{Debugger, EdgeID, Face, FaceID, FaceKind, Graph, RoadBundler};
 #[derive(Serialize)]
 pub struct DualCarriageway {
     pub name: String,
-    pub bearings: Vec<f64>,
     pub center_line: LineString,
     #[serde(skip)]
     pub splits: Splits,
@@ -30,7 +31,7 @@ impl DualCarriageway {
             .collect();
         edge_bearings.sort_by_key(|(_, x)| (*x * 10e5) as usize);
         let bearings: Vec<f64> = edge_bearings.iter().map(|(_, x)| *x).collect();
-        let classes = classify_bearings(bearings.clone());
+        let classes = classify_bearings(bearings);
 
         let mut side1 = Vec::new();
         let mut side2 = Vec::new();
@@ -108,7 +109,6 @@ impl DualCarriageway {
 
         Ok(Self {
             name,
-            bearings,
             center_line,
             splits,
             debug_hover: debug_hover.build(),
@@ -146,25 +146,6 @@ fn detect_dc_edges(graph: &Graph, face: &Face) -> Result<(String, Vec<EdgeID>)> 
     }
 
     Ok((name.to_string(), dc_edges))
-}
-
-fn angle_of_line(line: Line) -> f64 {
-    (line.dy()).atan2(line.dx()).to_degrees()
-}
-
-/// North is 0°
-/// East is 90°
-/// South  is 180°
-/// West is 270°
-fn euclidean_bearing(origin: Coord, destination: Coord) -> f64 {
-    (angle_of_line(Line::new(origin, destination)) + 450.0) % 360.0
-}
-
-/// The bearing from the linestring's start to end
-fn linestring_bearing(linestring: &LineString) -> f64 {
-    let pt1 = linestring.0[0];
-    let pt2 = linestring.0[linestring.0.len() - 1];
-    euclidean_bearing(pt1, pt2)
 }
 
 // Assumes input is sorted

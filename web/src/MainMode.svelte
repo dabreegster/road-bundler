@@ -32,7 +32,6 @@
     dual_carriageway:
       | {
           name: string;
-          bearings: number[];
           debug_hover: FeatureCollection;
         }
       | string;
@@ -51,6 +50,8 @@
         }
       | "Synthetic";
     is_road: boolean;
+    length: number;
+    bearing: number;
   }
 
   interface IntersectionProps {
@@ -266,7 +267,6 @@
         {:else}
           {@const dc = hoveredFace.properties.dual_carriageway}
           <p>{dc.name}</p>
-          <p>Bearings: {dc.bearings.map((b) => Math.round(b)).join(", ")}</p>
         {/if}
       {/if}
     {:else if tool == "sidepath"}
@@ -414,6 +414,16 @@
           {:else}
             {@const x = JSON.parse(props.provenance)}
             <h4>Edge {props.edge_id}, Way {x.OSM.way}</h4>
+            <p>Length {props.length}m</p>
+            <p>
+              Bearing {props.bearing}
+              <span
+                style:display="inline-block"
+                style:rotate={`${props.bearing}deg`}
+              >
+                ⬆
+              </span>
+            </p>
             <PropertiesTable properties={x.OSM.tags} />
           {/if}
         </Popup>

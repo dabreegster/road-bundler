@@ -9,7 +9,7 @@ use std::collections::BTreeMap;
 use std::sync::Once;
 
 use anyhow::Result;
-use geo::{Centroid, Point};
+use geo::{Centroid, Euclidean, Length, Point};
 use geojson::GeoJson;
 use utils::Tags;
 use wasm_bindgen::prelude::*;
@@ -85,6 +85,11 @@ impl RoadBundler {
                 serde_json::to_value(&edge.provenance).map_err(err_to_js)?,
             );
             f.set_property("is_road", !edge.is_sidewalk_or_cycleway());
+            f.set_property("length", Euclidean.length(&edge.linestring).round());
+            f.set_property(
+                "bearing",
+                geo_helpers::linestring_bearing(&edge.linestring).round(),
+            );
             features.push(f);
         }
         serde_json::to_string(&GeoJson::from(features)).map_err(err_to_js)
