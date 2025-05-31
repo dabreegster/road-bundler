@@ -4,6 +4,7 @@ use geojson::GeoJson;
 use itertools::Itertools;
 use serde::Serialize;
 
+use crate::geo_helpers::{average_linestrings, collapse_degree_2, KeyedLineString};
 use crate::split_line::Splits;
 use crate::{Debugger, EdgeID, Face, FaceID, FaceKind, Graph, RoadBundler};
 
@@ -41,19 +42,19 @@ impl DualCarriageway {
             }
         }
 
-        let side1_joined = crate::join_lines::collapse_degree_2(
+        let side1_joined = collapse_degree_2(
             side1
                 .iter()
-                .map(|e| crate::join_lines::KeyedLineString {
+                .map(|e| KeyedLineString {
                     linestring: graph.edges[e].linestring.clone(),
                     ids: vec![(*e, true)],
                 })
                 .collect(),
         );
-        let side2_joined = crate::join_lines::collapse_degree_2(
+        let side2_joined = collapse_degree_2(
             side2
                 .iter()
-                .map(|e| crate::join_lines::KeyedLineString {
+                .map(|e| KeyedLineString {
                     linestring: graph.edges[e].linestring.clone(),
                     ids: vec![(*e, true)],
                 })
@@ -67,10 +68,8 @@ impl DualCarriageway {
             );
         }
 
-        let center_line = crate::average_lines::average_linestrings(
-            &side1_joined[0].linestring,
-            &side2_joined[0].linestring,
-        )?;
+        let center_line =
+            average_linestrings(&side1_joined[0].linestring, &side2_joined[0].linestring)?;
         let splits = crate::split_line::split_center(graph, &center_line, face);
 
         let mut debug_hover = Debugger::new(graph.mercator.clone());

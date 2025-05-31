@@ -18,16 +18,14 @@ use crate::debugger::Debugger;
 use crate::faces::{make_faces, Face, FaceID, FaceKind};
 use crate::graph::{EdgeID, Graph, Intersection, IntersectionID, IntersectionProvenance};
 
-mod average_lines;
 mod debugger;
 mod dog_leg;
 mod dual_carriageway;
 mod faces;
+mod geo_helpers;
 mod graph;
-mod join_lines;
 mod scrape_buildings;
 mod sidepath;
-mod slice_nearest_boundary;
 mod split_line;
 
 static START: Once = Once::new();

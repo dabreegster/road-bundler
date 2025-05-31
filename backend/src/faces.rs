@@ -9,9 +9,9 @@ use i_overlay::core::fill_rule::FillRule;
 use i_overlay::float::slice::FloatSlice;
 use rstar::{primitives::GeomWithData, RTree, AABB};
 
+use crate::geo_helpers::SliceNearEndpoints;
 use crate::{
-    slice_nearest_boundary::SliceNearEndpoints, Debugger, EdgeID, Graph, Intersection,
-    IntersectionID, IntersectionProvenance, RoadBundler,
+    Debugger, EdgeID, Graph, Intersection, IntersectionID, IntersectionProvenance, RoadBundler,
 };
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
