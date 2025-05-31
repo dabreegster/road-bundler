@@ -1,5 +1,6 @@
 use geo::{Euclidean, InterpolatableLine, Length};
 
+use crate::geo_helpers::linestring_bearing;
 use crate::{EdgeID, Intersection, IntersectionProvenance, RoadBundler};
 
 impl RoadBundler {
@@ -55,9 +56,24 @@ impl RoadBundler {
 
         let src_edge = &self.graph.edges[&src_edges[0]];
         let dst_edge = &self.graph.edges[&dst_edges[0]];
-        // TODO Are these on "different sides" of the short edge?
-        // Orient the linestrings to point towards edge.src and edge.dst
-        // If the bearings are roughly opposite, then different sides
+
+        // Orient each linestring to point towards the intersection on edge
+        let mut src_ls = src_edge.linestring.clone();
+        let mut dst_ls = dst_edge.linestring.clone();
+        if src_edge.dst != edge.src {
+            src_ls.0.reverse();
+        }
+        if dst_edge.dst != edge.dst {
+            dst_ls.0.reverse();
+        }
+        let b1 = linestring_bearing(&src_ls);
+        let b2 = linestring_bearing(&dst_ls);
+
+        // If these both point about the same way, they're on the "same side" of the short edge.
+        // Not a dog leg.
+        if (b1 - b2).abs() < 30.0 {
+            return false;
+        }
 
         true
     }
