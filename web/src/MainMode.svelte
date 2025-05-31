@@ -2,7 +2,7 @@
   import DebuggerLayer from "./DebuggerLayer.svelte";
   import DebuggerLegend from "./DebuggerLegend.svelte";
   import ToolSwitcher from "./ToolSwitcher.svelte";
-  import { backend, type Tool } from "./";
+  import { colors, backend, type Tool } from "./";
   import { SplitComponent } from "svelte-utils/two_column_layout";
   import {
     GeoJSON,
@@ -227,12 +227,12 @@
   $: faceFillColor = [
     "case",
     ["==", ["get", "kind"], "UrbanBlock"],
-    "purple",
+    colors.UrbanBlock,
     ["==", ["get", "kind"], "SidepathArtifact"],
-    "yellow",
+    colors.SidepathArtifact,
     ["!=", ["typeof", ["get", "dual_carriageway"]], "string"],
-    tool == "dualCarriageway" ? "blue" : "cyan",
-    "cyan",
+    tool == "dualCarriageway" ? colors.DualCarriageway : colors.RoadArtifact,
+    colors.RoadArtifact,
   ] as unknown as ExpressionSpecification;
 </script>
 
@@ -316,9 +316,9 @@
 
         <QualitativeLegend
           labelColors={{
-            "urban block": "purple",
-            "road artifact": "cyan",
-            "sidepath artifact": "yellow",
+            "urban block": colors.UrbanBlock,
+            "road artifact": colors.RoadArtifact,
+            "sidepath artifact": colors.SidepathArtifact,
           }}
           itemsPerRow={3}
         />
@@ -337,11 +337,11 @@
 
         <QualitativeLegend
           labelColors={{
-            "OSM road edge": "black",
-            "OSM sidewalk/cycleway edge": "grey",
-            "OSM intersection": "green",
-            "synthetic edge": "orange",
-            "synthetic intersection": "pink",
+            "OSM road edge": colors.OsmRoadEdge,
+            "OSM sidewalk/cycleway edge": colors.OsmSidepathEdge,
+            "OSM intersection": colors.OsmIntersection,
+            "synthetic edge": colors.SyntheticEdge,
+            "synthetic intersection": colors.SyntheticIntersection,
           }}
           itemsPerRow={1}
         />
@@ -379,7 +379,7 @@
       <CircleLayer
         id="buildings"
         paint={{
-          "circle-color": "black",
+          "circle-color": colors.BuildingCentroid,
           "circle-radius": 3,
         }}
         layout={{ visibility: showBuildings ? "visible" : "none" }}
@@ -397,10 +397,10 @@
           "line-color": [
             "case",
             ["==", ["get", "provenance"], "Synthetic"],
-            "orange",
+            colors.SyntheticEdge,
             ["get", "is_road"],
-            "black",
-            "grey",
+            colors.OsmRoadEdge,
+            colors.OsmSidepathEdge,
           ],
           "line-opacity": showSimplified ? 1 : 0.5,
         }}
@@ -427,8 +427,8 @@
           "circle-color": [
             "case",
             ["==", ["get", "provenance"], "Synthetic"],
-            "pink",
-            "green",
+            colors.SyntheticIntersection,
+            colors.OsmIntersection,
           ],
           "circle-radius": 7,
           "circle-opacity": showSimplified ? 1 : 0.5,
@@ -445,7 +445,7 @@
           filter={isLine}
           paint={{
             "line-width": 5,
-            "line-color": "black",
+            "line-color": colors.OsmRoadEdge,
           }}
           layout={{ visibility: !showSimplified ? "visible" : "none" }}
         />
@@ -454,7 +454,7 @@
           id="original-intersections"
           filter={isPoint}
           paint={{
-            "circle-color": "green",
+            "circle-color": colors.OsmIntersection,
             "circle-radius": 7,
           }}
           layout={{ visibility: !showSimplified ? "visible" : "none" }}

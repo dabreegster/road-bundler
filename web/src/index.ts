@@ -9,3 +9,18 @@ export type Tool =
   | "dualCarriageway"
   | "sidepath"
   | "edge";
+
+export let colors = {
+  UrbanBlock: "purple",
+  SidepathArtifact: "yellow",
+  DualCarriageway: "blue",
+  RoadArtifact: "cyan",
+
+  OsmRoadEdge: "black",
+  OsmSidepathEdge: "grey",
+  OsmIntersection: "green",
+  SyntheticEdge: "orange",
+  SyntheticIntersection: "pink",
+
+  BuildingCentroid: "black",
+};
