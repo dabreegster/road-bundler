@@ -215,6 +215,7 @@ impl RoadBundler {
                     existing_i,
                     closest_new_i,
                 );
+                // TODO Which of the original edges should be associated_original_edges?
             }
         }
 

@@ -53,6 +53,7 @@
     is_road: boolean;
     length: number;
     bearing: number;
+    associated_original_edges: number[];
   }
 
   interface IntersectionProps {
@@ -72,6 +73,10 @@
   let buildings: FeatureCollection<Point> = JSON.parse(
     $backend!.getBuildings(),
   );
+  let originalGraph: FeatureCollection = JSON.parse(
+    $backend!.getOriginalOsmGraph(),
+  );
+  let originalEdges = getOriginalEdges();
 
   let tool: Tool = "explore";
   let undoCount = 0;
@@ -88,6 +93,8 @@
   $: hoveredFace = tmpHoveredFace
     ? faces.features[tmpHoveredFace.id! as number]
     : (null as Feature<Polygon, FaceProps> | null);
+
+  let tmpHoveredEdge: Feature | null = null;
 
   function clickFace(e: CustomEvent<LayerClickInfo>) {
     try {
@@ -122,13 +129,7 @@
   function clickEdge(e: CustomEvent<LayerClickInfo>) {
     try {
       let f = e.detail.features[0];
-      if (tool == "explore") {
-        if (f.properties!.provenance != "Synthetic") {
-          let way = JSON.parse(f.properties!.provenance).OSM.way;
-          window.open(`https://www.openstreetmap.org/way/${way}`, "_blank");
-        }
-        return;
-      } else if (tool == "edge") {
+      if (tool == "edge") {
         $backend!.collapseEdge(f.properties!.edge_id);
       } else {
         return;
@@ -250,6 +251,33 @@
       return hoveredFace.properties.sidepath;
     }
     return emptyGeojson();
+  }
+
+  function getOriginalEdges(): Record<number, Feature> {
+    let edges: Record<number, Feature> = {};
+    for (let f of originalGraph.features) {
+      if (f.geometry.type == "LineString") {
+        edges[f.properties!.edge_id as number] = f;
+      }
+    }
+    return edges;
+  }
+
+  function debugAssociatedEdges(
+    tmpHoveredEdge: Feature | null,
+  ): FeatureCollection {
+    let gj: FeatureCollection = {
+      type: "FeatureCollection" as const,
+      features: [],
+    };
+    if (tmpHoveredEdge) {
+      for (let e of JSON.parse(
+        tmpHoveredEdge.properties!.associated_original_edges,
+      )) {
+        gj.features.push(originalEdges[e]);
+      }
+    }
+    return gj;
   }
 
   // TS fail
@@ -425,9 +453,15 @@
         id="edges"
         beforeId="Road labels"
         manageHoverState
+        bind:hovered={tmpHoveredEdge}
         eventsIfTopMost
         paint={{
-          "line-width": hoverStateFilter(5, 8),
+          "line-width": [
+            "case",
+            ["==", 0, ["length", ["get", "associated_original_edges"]]],
+            hoverStateFilter(5, 8),
+            hoverStateFilter(7, 10),
+          ],
           "line-color": [
             "case",
             ["==", ["get", "provenance"], "Synthetic"],
@@ -439,26 +473,45 @@
           "line-opacity": showSimplified ? 1 : 0.5,
         }}
         layout={{ visibility: showEdges ? "visible" : "none" }}
-        hoverCursor={tool == "edge" ? "pointer" : undefined}
+        hoverCursor="pointer"
         on:click={clickEdge}
       >
-        <Popup openOn="hover" let:props>
+        <Popup openOn={tool == "edge" ? "hover" : "click"} let:props>
           {#if props.provenance == "Synthetic"}
             <h4>Edge {props.edge_id}, synthetic</h4>
           {:else}
             {@const x = JSON.parse(props.provenance)}
-            <h4>Edge {props.edge_id}, Way {x.OSM.way}</h4>
-            <p>Length {props.length}m</p>
-            <p>
-              Bearing {props.bearing}
-              <span
-                style:display="inline-block"
-                style:rotate={`${props.bearing}deg`}
+            <h4>
+              Edge {props.edge_id},
+              <a
+                href={`https://www.openstreetmap.org/way/${x.OSM.way}`}
+                target="_blank"
               >
-                ⬆
-              </span>
-            </p>
-            <PropertiesTable properties={x.OSM.tags} />
+                Way {x.OSM.way}
+              </a>
+            </h4>
+          {/if}
+
+          <p>
+            Original edges: {JSON.parse(props.associated_original_edges).join(
+              ", ",
+            )}
+          </p>
+          <p>Length {props.length}m</p>
+          <p>
+            Bearing {props.bearing}
+            <span
+              style:display="inline-block"
+              style:rotate={`${props.bearing}deg`}
+            >
+              ⬆
+            </span>
+          </p>
+
+          {#if props.provenance != "Synthetic"}
+            <PropertiesTable
+              properties={JSON.parse(props.provenance).OSM.tags}
+            />
           {/if}
         </Popup>
       </LineLayer>
@@ -482,7 +535,7 @@
     </GeoJSON>
 
     {#if $backend}
-      <GeoJSON data={JSON.parse($backend.getOriginalOsmGraph())}>
+      <GeoJSON data={originalGraph}>
         <LineLayer
           id="original-edges"
           beforeId="Road labels"
@@ -505,6 +558,18 @@
         />
       </GeoJSON>
     {/if}
+
+    <GeoJSON data={debugAssociatedEdges(tmpHoveredEdge)}>
+      <LineLayer
+        id="debug-original-edges"
+        beforeId="Road labels"
+        paint={{
+          "line-width": 5,
+          "line-color": colors.OsmRoadEdge,
+          "line-dasharray": [2, 2],
+        }}
+      />
+    </GeoJSON>
 
     <DebuggerLayer data={debugFace(hoveredFace, tool)} />
   </div>

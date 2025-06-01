@@ -209,6 +209,7 @@ impl RoadBundler {
     pub fn collapse_to_centroid(&mut self, id: FaceID) {
         let face = &self.faces[&id];
 
+        // TODO Preserve associated_original_edges, probably on the new intersection
         for e in &face.boundary_edges {
             self.graph.remove_edge(*e);
         }

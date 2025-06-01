@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use geo::{LineString, Point, Polygon};
 use osm_reader::{NodeID, WayID};
@@ -25,6 +25,10 @@ pub struct Edge {
     pub dst: IntersectionID,
     pub linestring: LineString,
     pub provenance: EdgeProvenance,
+
+    /// Any edges from the original_graph that've been consolidated into this one. It should maybe
+    /// only be defined for synthetic edges, but sidepath matching is still TBD
+    pub associated_original_edges: BTreeSet<EdgeID>,
 }
 
 impl Edge {
@@ -119,6 +123,7 @@ impl Graph {
                                 node2: e.osm_node2,
                                 tags: e.osm_tags,
                             },
+                            associated_original_edges: BTreeSet::new(),
                         },
                     )
                 })
@@ -230,6 +235,7 @@ impl Graph {
                 dst,
                 linestring,
                 provenance: EdgeProvenance::Synthetic,
+                associated_original_edges: BTreeSet::new(),
             },
         );
         self.intersections.get_mut(&src).unwrap().edges.push(id);

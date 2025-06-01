@@ -90,6 +90,16 @@ impl RoadBundler {
                 "bearing",
                 geo_helpers::linestring_bearing(&edge.linestring).round(),
             );
+            f.set_property(
+                "associated_original_edges",
+                serde_json::to_value(
+                    edge.associated_original_edges
+                        .iter()
+                        .map(|e| e.0)
+                        .collect::<Vec<_>>(),
+                )
+                .map_err(err_to_js)?,
+            );
             features.push(f);
         }
         serde_json::to_string(&GeoJson::from(features)).map_err(err_to_js)
@@ -113,8 +123,10 @@ impl RoadBundler {
     #[wasm_bindgen(js_name = getOriginalOsmGraph)]
     pub fn get_original_osm_graph(&self) -> Result<String, JsValue> {
         let mut features = Vec::new();
-        for (_, edge) in &self.original_graph.edges {
-            features.push(self.graph.mercator.to_wgs84_gj(&edge.linestring));
+        for (id, edge) in &self.original_graph.edges {
+            let mut f = self.graph.mercator.to_wgs84_gj(&edge.linestring);
+            f.set_property("edge_id", id.0);
+            features.push(f);
         }
         for (_, i) in &self.original_graph.intersections {
             features.push(self.graph.mercator.to_wgs84_gj(&i.point));
