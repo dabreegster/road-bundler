@@ -161,7 +161,7 @@ impl Graph {
         EdgeID(self.edge_id_counter)
     }
 
-    pub fn remove_edge(&mut self, e: EdgeID) {
+    pub fn remove_edge(&mut self, e: EdgeID) -> Edge {
         let edge = self
             .edges
             .remove(&e)
@@ -171,6 +171,7 @@ impl Graph {
             intersection.edges.retain(|x| *x != e);
             // If edge.src == edge.dst, this is idempotent
         }
+        edge
     }
 
     pub fn remove_empty_intersection(&mut self, i: IntersectionID) {
@@ -188,6 +189,7 @@ impl Graph {
         &mut self,
         linestrings: Vec<LineString>,
         endpoints: Vec<Point>,
+        associated_original_edges: Vec<EdgeID>,
     ) -> Vec<IntersectionID> {
         // Assumes linestrings all point in the correct way
         // Assumes endpoints comes from linestring_endpoints (TODO maybe just call it here)
@@ -209,11 +211,17 @@ impl Graph {
         }
 
         for (idx, linestring) in linestrings.into_iter().enumerate() {
-            self.create_new_edge(
+            let e = self.create_new_edge(
                 linestring,
                 new_intersections[idx],
                 new_intersections[idx + 1],
             );
+            // TODO For now, all match up
+            self.edges
+                .get_mut(&e)
+                .unwrap()
+                .associated_original_edges
+                .extend(associated_original_edges.clone());
         }
 
         new_intersections
@@ -225,7 +233,7 @@ impl Graph {
         linestring: LineString,
         src: IntersectionID,
         dst: IntersectionID,
-    ) {
+    ) -> EdgeID {
         let id = self.new_edge_id();
         self.edges.insert(
             id,
@@ -240,6 +248,7 @@ impl Graph {
         );
         self.intersections.get_mut(&src).unwrap().edges.push(id);
         self.intersections.get_mut(&dst).unwrap().edges.push(id);
+        id
     }
 
     /// Extends the edge geometry in a way that probably overlaps

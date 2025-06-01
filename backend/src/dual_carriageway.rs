@@ -179,14 +179,20 @@ impl RoadBundler {
             .expect("collapse_dual_carriageway on something that isn't a DC");
 
         // Remove all the boundary_edges
+        let mut associated_original_edges = Vec::new();
         for e in &face.boundary_edges {
-            self.graph.remove_edge(*e);
+            let edge = self.graph.remove_edge(*e);
+            associated_original_edges.push(*e);
+            associated_original_edges.extend(edge.associated_original_edges);
         }
 
         // Create the new split center-lines, with new intersections
-        let new_intersections = self
-            .graph
-            .create_new_linked_edges(dc.splits.lines, dc.splits.new_endpts);
+        // TODO Which of the original edges should be associated_original_edges? For now, all
+        let new_intersections = self.graph.create_new_linked_edges(
+            dc.splits.lines,
+            dc.splits.new_endpts,
+            associated_original_edges,
+        );
 
         // Re-attach every connecting edge to the nearest new intersection
         // (we could maybe preserve more info to do this directly?)
@@ -215,7 +221,6 @@ impl RoadBundler {
                     existing_i,
                     closest_new_i,
                 );
-                // TODO Which of the original edges should be associated_original_edges?
             }
         }
 

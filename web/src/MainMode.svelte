@@ -274,7 +274,11 @@
       for (let e of JSON.parse(
         tmpHoveredEdge.properties!.associated_original_edges,
       )) {
-        gj.features.push(originalEdges[e]);
+        let edge = originalEdges[e];
+        // TODO We're not being careful to preserve original edges only
+        if (edge) {
+          gj.features.push(edge);
+        }
       }
     }
     return gj;

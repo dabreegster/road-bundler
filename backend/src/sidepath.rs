@@ -83,6 +83,7 @@ impl RoadBundler {
                 // TODO This could potentially be many-to-many as expressed now. That seems
                 // possible and valid; we need to properly split and match things up.
                 for e in info.road_edges {
+                    // TODO Make sure all of the roads are original?
                     self.graph
                         .edges
                         .get_mut(&e)
