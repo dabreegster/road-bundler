@@ -82,6 +82,9 @@ impl RoadBundler {
         if Euclidean.length(&edge.linestring) > 5.0 {
             return None;
         }
+        if edge.get_name().is_none() {
+            return None;
+        }
         let mut src_edges = self.graph.intersections[&edge.src].edges.clone();
         let mut dst_edges = self.graph.intersections[&edge.dst].edges.clone();
         if src_edges.len() != 3 || dst_edges.len() != 3 {
