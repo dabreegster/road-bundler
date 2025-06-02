@@ -232,7 +232,9 @@ impl RoadBundler {
             //
             // Usually there's just 1 surviving edge, but there could be 0, or a roundabout with
             // two roads jutting off from the same node.
-            self.graph.replace_intersection(*i, new_intersection);
+            let extend_geometry = true;
+            self.graph
+                .replace_intersection(*i, new_intersection, extend_geometry);
         }
     }
 }

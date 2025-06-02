@@ -248,7 +248,12 @@ impl RoadBundler {
         let mut cmds_applied = 0;
 
         loop {
-            if let Some(id) = self.graph.edges.keys().find(|e| self.is_dog_leg(**e)) {
+            if let Some(id) = self
+                .graph
+                .edges
+                .keys()
+                .find(|e| self.is_dog_leg(**e).is_some())
+            {
                 let cmd = Command::CollapseEdge(*id);
                 self.commands.push(cmd);
                 self.apply_cmd(cmd);

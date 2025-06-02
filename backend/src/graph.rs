@@ -256,6 +256,7 @@ impl Graph {
         &mut self,
         remove_i: IntersectionID,
         new_intersection: IntersectionID,
+        extend_geometry: bool,
     ) {
         let intersection = self
             .intersections
@@ -267,16 +268,20 @@ impl Graph {
             if edge.src == remove_i {
                 edge.src = new_intersection;
                 // TODO In provenance, should we mark modified cases?
-                edge.linestring
-                    .0
-                    .insert(0, self.intersections[&new_intersection].point.into());
+                if extend_geometry {
+                    edge.linestring
+                        .0
+                        .insert(0, self.intersections[&new_intersection].point.into());
+                }
                 updated = true;
             }
             if edge.dst == remove_i {
                 edge.dst = new_intersection;
-                edge.linestring
-                    .0
-                    .push(self.intersections[&new_intersection].point.into());
+                if extend_geometry {
+                    edge.linestring
+                        .0
+                        .push(self.intersections[&new_intersection].point.into());
+                }
                 updated = true;
             }
 

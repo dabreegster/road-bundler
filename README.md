@@ -56,7 +56,7 @@ this one is probably through a two-part process:
     bindings and get a simplified GeoJSON network as output, with structured
     properties as output
 
-Some example use cases from my other projects:
+Some example use cases:
 
 - Creating a simplified graph for od2net and NPW. Directionality on dual
   carriageways doesn't matter for those, and network planning in complex areas
