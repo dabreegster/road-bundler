@@ -4,8 +4,8 @@ use crate::geo_helpers::linestring_bearing;
 use crate::{EdgeID, Intersection, IntersectionProvenance, RoadBundler};
 
 pub struct DogLeg {
-    side_road_src: EdgeID,
-    side_road_dst: EdgeID,
+    // In no particular order
+    side_roads: (EdgeID, EdgeID),
 }
 
 impl RoadBundler {
@@ -46,13 +46,29 @@ impl RoadBundler {
         // new intersection.
         if let Some(dog_leg) = dog_leg {
             for e in &self.graph.intersections[&new_intersection].edges {
-                if *e == dog_leg.side_road_src {
-                    // TODO
-                } else if *e == dog_leg.side_road_dst {
-                    // TODO
+                let fix_edge = self.graph.edges.get_mut(e).unwrap();
+                if *e == dog_leg.side_roads.0 || *e == dog_leg.side_roads.1 {
+                    // Trim off the first or last meter, then connect to the new intersection
+                    if fix_edge.src == new_intersection {
+                        if let Some(trim_pt) = fix_edge
+                            .linestring
+                            .point_at_distance_from_start(&Euclidean, 1.0)
+                        {
+                            fix_edge.linestring.0[0] = trim_pt.into();
+                            fix_edge.linestring.0.insert(0, midpt.into());
+                        }
+                    } else {
+                        if let Some(trim_pt) = fix_edge
+                            .linestring
+                            .point_at_distance_from_end(&Euclidean, 1.0)
+                        {
+                            fix_edge.linestring.0.pop();
+                            fix_edge.linestring.0.push(trim_pt.into());
+                            fix_edge.linestring.0.push(midpt.into());
+                        }
+                    }
                 } else {
                     // Extend the main roads up to the new point
-                    let fix_edge = self.graph.edges.get_mut(e).unwrap();
                     if fix_edge.src == new_intersection {
                         fix_edge.linestring.0.insert(0, midpt.into());
                     } else {
@@ -105,8 +121,7 @@ impl RoadBundler {
         }
 
         Some(DogLeg {
-            side_road_src: src_edges[0],
-            side_road_dst: dst_edges[0],
+            side_roads: (src_edges[0], dst_edges[0]),
         })
     }
 }
