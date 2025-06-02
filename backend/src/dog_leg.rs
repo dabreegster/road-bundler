@@ -41,14 +41,12 @@ impl RoadBundler {
         self.graph
             .replace_intersection(dst, new_intersection, extend_geometry);
 
-        // If it's a dog leg, fix up the geometry. Extend the two "main roads" up to the new
-        // intersection. Leave the two "side roads" alone -- their linestring will not touch the
-        // new intersection.
         if let Some(dog_leg) = dog_leg {
             for e in &self.graph.intersections[&new_intersection].edges {
                 let fix_edge = self.graph.edges.get_mut(e).unwrap();
                 if *e == dog_leg.side_roads.0 || *e == dog_leg.side_roads.1 {
-                    // Trim off the first or last meter, then connect to the new intersection
+                    // For the two side roads, trim off the first or last meter, then connect to
+                    // the new intersection
                     if fix_edge.src == new_intersection {
                         if let Some(trim_pt) = fix_edge
                             .linestring
