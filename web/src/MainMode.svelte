@@ -22,7 +22,11 @@
     Point,
   } from "geojson";
   import { isLine, isPoint, emptyGeojson, Popup } from "svelte-utils/map";
-  import { PropertiesTable, QualitativeLegend } from "svelte-utils";
+  import {
+    PropertiesTable,
+    QualitativeLegend,
+    downloadGeneratedFile,
+  } from "svelte-utils";
 
   interface FaceProps {
     face_id: number;
@@ -284,6 +288,23 @@
     return gj;
   }
 
+  function downloadSidepathsAndRoads() {
+    downloadGeneratedFile(
+      "roads.geojson",
+      JSON.stringify({
+        type: "FeatureCollection",
+        features: edges.features.filter((f) => f.properties.is_road),
+      }),
+    );
+    downloadGeneratedFile(
+      "sidepaths.geojson",
+      JSON.stringify({
+        type: "FeatureCollection",
+        features: edges.features.filter((f) => !f.properties.is_road),
+      }),
+    );
+  }
+
   // TS fail
   $: faceFillColor = [
     "case",
@@ -338,6 +359,10 @@
 
       <button class="outline" on:click={removeAllSidepaths}>
         Remove all sidepaths
+      </button>
+
+      <button class="outline" on:click={downloadSidepathsAndRoads}>
+        Download GJ of sidepaths and roads
       </button>
     {:else if tool == "edge"}
       <p>Click an edge to collapse it</p>
