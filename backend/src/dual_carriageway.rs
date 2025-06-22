@@ -3,10 +3,9 @@ use geo::{Distance, Euclidean, LineString};
 use geojson::GeoJson;
 use itertools::Itertools;
 use serde::Serialize;
+use utils::{collapse_degree_2, KeyedLineString};
 
-use crate::geo_helpers::{
-    average_linestrings, collapse_degree_2, linestring_bearing, KeyedLineString,
-};
+use crate::geo_helpers::{average_linestrings, linestring_bearing};
 use crate::split_line::Splits;
 use crate::{Debugger, EdgeID, Face, FaceID, FaceKind, Graph, RoadBundler};
 
@@ -49,6 +48,7 @@ impl DualCarriageway {
                 .map(|e| KeyedLineString {
                     linestring: graph.edges[e].linestring.clone(),
                     ids: vec![(*e, true)],
+                    key: (),
                 })
                 .collect(),
         );
@@ -58,6 +58,7 @@ impl DualCarriageway {
                 .map(|e| KeyedLineString {
                     linestring: graph.edges[e].linestring.clone(),
                     ids: vec![(*e, true)],
+                    key: (),
                 })
                 .collect(),
         );
