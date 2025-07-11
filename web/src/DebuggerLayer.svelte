@@ -3,12 +3,13 @@
   import type { FeatureCollection } from "geojson";
   import { isPoint, isLine } from "svelte-utils/map";
 
+  export let name: string;
   export let data: FeatureCollection;
 </script>
 
 <GeoJSON {data}>
   <LineLayer
-    id="debug-lines"
+    id={`debug-${name}-lines`}
     beforeId="Road labels"
     filter={isLine}
     paint={{
@@ -19,7 +20,7 @@
   />
 
   <CircleLayer
-    id="debug-points"
+    id={`debug-${name}-points`}
     beforeId="Road labels"
     filter={isPoint}
     paint={{

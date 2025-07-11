@@ -256,6 +256,20 @@
     }
     return emptyGeojson();
   }
+  $: debuggedFace = debugFace(hoveredFace, tool);
+
+  function debugEdge(
+    tmpHoveredEdge: Feature | null,
+    tool: string,
+  ): FeatureCollection {
+    if (!tmpHoveredEdge || tool != "width") {
+      return emptyGeojson();
+    }
+    return JSON.parse(
+      $backend!.debugRoadWidth(tmpHoveredEdge.properties!.edge_id),
+    );
+  }
+  $: debuggedEdge = debugEdge(tmpHoveredEdge, tool);
 
   function getOriginalEdges(): Record<number, Feature> {
     let edges: Record<number, Feature> = {};
@@ -274,7 +288,7 @@
       type: "FeatureCollection" as const,
       features: [],
     };
-    if (tmpHoveredEdge) {
+    if (tmpHoveredEdge && tool != "width") {
       for (let e of JSON.parse(
         tmpHoveredEdge.properties!.associated_original_edges,
       )) {
@@ -370,6 +384,8 @@
       <button class="outline" on:click={fixAllDogLegs}>
         Collapse all dog-leg intersections
       </button>
+    {:else if tool == "width"}
+      <p>Hover on an edge to measure its width</p>
     {/if}
   </div>
 
@@ -437,7 +453,8 @@
 
         <hr />
 
-        <DebuggerLegend data={debugFace(hoveredFace, tool)} />
+        <DebuggerLegend data={debuggedFace} />
+        <DebuggerLegend data={debuggedEdge} />
       </div>
     </Control>
 
@@ -600,7 +617,8 @@
       />
     </GeoJSON>
 
-    <DebuggerLayer data={debugFace(hoveredFace, tool)} />
+    <DebuggerLayer name="face" data={debuggedFace} />
+    <DebuggerLayer name="edge" data={debuggedEdge} />
   </div>
 </SplitComponent>
 

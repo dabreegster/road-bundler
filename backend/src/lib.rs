@@ -9,8 +9,9 @@ use std::collections::BTreeMap;
 use std::sync::Once;
 
 use anyhow::Result;
-use geo::{Centroid, Euclidean, Length, Point};
+use geo::{Centroid, Euclidean, Length, Point, Polygon};
 use geojson::GeoJson;
+use rstar::RTree;
 use utils::Tags;
 use wasm_bindgen::prelude::*;
 
@@ -27,12 +28,14 @@ mod graph;
 mod scrape_buildings;
 mod sidepath;
 mod split_line;
+mod width;
 
 static START: Once = Once::new();
 
 #[wasm_bindgen]
 pub struct RoadBundler {
     original_graph: Graph,
+    buildings_rtree: RTree<Polygon>,
     building_centroids: Vec<Point>,
     commands: Vec<Command>,
 
@@ -62,10 +65,13 @@ impl RoadBundler {
             graph.mercator.to_mercator_in_place(polygon);
             building_centroids.extend(polygon.centroid());
         }
+        let buildings_rtree =
+            RTree::bulk_load(buildings.polygons.into_iter().map(|(_, p)| p).collect());
 
         let faces = make_faces(&graph, &building_centroids);
         Ok(Self {
             original_graph: graph.clone(),
+            buildings_rtree,
             building_centroids,
             commands: Vec::new(),
 
@@ -150,6 +156,11 @@ impl RoadBundler {
             features.push(self.graph.mercator.to_wgs84_gj(pt));
         }
         serde_json::to_string(&GeoJson::from(features)).map_err(err_to_js)
+    }
+
+    #[wasm_bindgen(js_name = debugRoadWidth)]
+    pub fn debug_road_width(&self, id: usize) -> Result<String, JsValue> {
+        width::debug_road_width(self, EdgeID(id)).map_err(err_to_js)
     }
 
     #[wasm_bindgen(js_name = undo)]

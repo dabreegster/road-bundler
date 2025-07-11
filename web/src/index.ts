@@ -8,7 +8,8 @@ export type Tool =
   | "collapseToCentroid"
   | "dualCarriageway"
   | "sidepath"
-  | "edge";
+  | "edge"
+  | "width";
 
 export let colors = {
   UrbanBlock: "purple",

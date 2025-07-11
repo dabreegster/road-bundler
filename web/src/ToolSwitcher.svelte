@@ -9,6 +9,7 @@
     ["dualCarriageway", "Dual carriageways", "fa-solid fa-grip-lines-vertical"],
     ["sidepath", "Sidepaths", "fa-solid fa-lines-leaning"],
     ["edge", "Edges", "fa-solid fa-dog"],
+    ["width", "Road width", "fa-solid fa-ruler-horizontal"],
   ];
 
   function keyDown(e: KeyboardEvent) {
@@ -22,6 +23,8 @@
       tool = "sidepath";
     } else if (e.key == "5") {
       tool = "edge";
+    } else if (e.key == "6") {
+      tool = "width";
     }
   }
 </script>
@@ -44,5 +47,6 @@
   div {
     display: flex;
     gap: 4px;
+    flex-wrap: wrap;
   }
 </style>
