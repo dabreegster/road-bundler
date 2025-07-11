@@ -88,7 +88,7 @@
   let showFaces = true;
   let showUrbanBlocks = false;
   let showEdges = true;
-  let showIntersections = true;
+  let showIntersections = false;
   let showBuildings = false;
   let showSimplified = true;
 
