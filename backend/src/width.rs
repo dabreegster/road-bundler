@@ -1,5 +1,5 @@
 use anyhow::Result;
-use geo::{Coord, Densify, Euclidean, Length, Line, LineIntersection, LineString, Polygon};
+use geo::{Coord, Euclidean, Length, Line, LineIntersection, LineString, Polygon};
 use geojson::GeoJson;
 use rstar::{RTree, RTreeObject};
 
@@ -39,7 +39,8 @@ fn get_road_widths(bundler: &RoadBundler, e: EdgeID) -> Vec<LineString> {
     let step_size_meters = 10.0;
     let project_away_meters = 50.0;
 
-    let test_points = points_along_line(&bundler.graph.edges[&e].linestring, step_size_meters);
+    let test_points =
+        crate::geo_helpers::step_along_line(&bundler.graph.edges[&e].linestring, step_size_meters);
     let mut output = Vec::new();
     for (pt, angle) in test_points {
         let mut test_lines = Vec::new();
@@ -57,24 +58,6 @@ fn get_road_widths(bundler: &RoadBundler, e: EdgeID) -> Vec<LineString> {
         output.push(LineString::new(vec![test_lines[0].end, test_lines[1].end]));
     }
     output
-}
-
-// TODO Move to geo_helpers...
-// Every step_size along a LineString, returns the point and angle
-fn points_along_line(linestring: &LineString, step_size_meters: f64) -> Vec<(Coord, f64)> {
-    let mut result = Vec::new();
-    // Using lines instead of coords so we can get the angle -- but is this hard to reason about?
-    for line in Euclidean.densify(linestring, step_size_meters).lines() {
-        // TODO For the last line, use the last point too
-        let pt = line.start;
-        let angle = line_angle_degrees(line);
-        result.push((pt, angle));
-    }
-    result
-}
-
-fn line_angle_degrees(line: Line) -> f64 {
-    line.dy().atan2(line.dx()).to_degrees()
 }
 
 fn project_away(pt: Coord, angle_degrees: f64, distance: f64) -> Coord {
