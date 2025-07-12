@@ -300,9 +300,11 @@
 
   function doAllSimplifications() {
     doBulkEdit((b) => {
-      b.removeAllSidepaths();
-      b.removeAllServiceRoads();
-      b.collapseAllDegenerateIntersections();
+      return (
+        b.removeAllSidepaths() +
+        b.removeAllServiceRoads() +
+        b.collapseAllDegenerateIntersections()
+      );
     });
   }
 

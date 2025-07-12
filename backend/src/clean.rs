@@ -29,7 +29,12 @@ impl RoadBundler {
 
     pub fn collapse_degenerate_intersection(&mut self, id: IntersectionID) {
         let edges = self.graph.intersections[&id].edges.clone();
-        assert_eq!(edges.len(), 2);
+        // Silently do nothing?
+        // TODO in city of london, collapsing all creates a new case of a self-loop somewhere
+        if edges.len() != 2 || edges[0] == edges[1] {
+            return;
+        }
+
         let mut edge1 = self.graph.remove_edge(edges[0]);
         let mut edge2 = self.graph.remove_edge(edges[1]);
         self.graph.remove_empty_intersection(id);
