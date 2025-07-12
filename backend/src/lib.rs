@@ -256,6 +256,41 @@ impl RoadBundler {
         1
     }
 
+    #[wasm_bindgen(js_name = collapseDegenerateIntersection)]
+    pub fn collapse_degenerate_intersection_wasm(&mut self, id: usize) {
+        let id = IntersectionID(id);
+        // TODO Silently do nothing if invalid?
+        if self.graph.intersections[&id].edges.len() != 2 {
+            return;
+        }
+
+        let cmd = Command::CollapseDegenerateIntersection(id);
+        self.commands.push(cmd);
+        self.apply_cmd(cmd);
+    }
+
+    #[wasm_bindgen(js_name = collapseAllDegenerateIntersections)]
+    pub fn collapse_all_degenerate_intersections(&mut self) -> usize {
+        let to_merge: Vec<IntersectionID> = self
+            .graph
+            .intersections
+            .iter()
+            .filter(|(_, i)| i.edges.len() == 2)
+            .map(|(id, _)| *id)
+            .collect();
+
+        // TODO Cheating perf-wise here and not using apply_cmd, because we only need to
+        // recalculate faces once
+        for id in &to_merge {
+            self.commands
+                .push(Command::CollapseDegenerateIntersection(*id));
+            self.collapse_degenerate_intersection(*id);
+        }
+        self.faces = make_faces(&self.graph, &self.building_centroids);
+
+        to_merge.len()
+    }
+
     #[wasm_bindgen(js_name = collapseEdge)]
     pub fn collapse_edge_wasm(&mut self, id: usize) {
         let cmd = Command::CollapseEdge(EdgeID(id));
@@ -297,6 +332,7 @@ impl RoadBundler {
             Command::CollapseEdge(edge) => self.collapse_edge(edge),
             Command::RemoveAllSidepaths => self.remove_all_sidepaths(),
             Command::RemoveAllServiceRoads => self.remove_all_service_roads(),
+            Command::CollapseDegenerateIntersection(i) => self.collapse_degenerate_intersection(i),
         }
         self.faces = make_faces(&self.graph, &self.building_centroids);
     }
@@ -310,6 +346,7 @@ pub enum Command {
     MergeSidepath(FaceID),
     RemoveAllSidepaths,
     RemoveAllServiceRoads,
+    CollapseDegenerateIntersection(IntersectionID),
     CollapseEdge(EdgeID),
 }
 

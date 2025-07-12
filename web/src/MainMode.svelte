@@ -149,6 +149,24 @@
     }
   }
 
+  function clickIntersection(e: CustomEvent<LayerClickInfo>) {
+    try {
+      let f = e.detail.features[0];
+      if (tool == "edge") {
+        $backend!.collapseDegenerateIntersection(f.properties!.intersection_id);
+      } else {
+        return;
+      }
+
+      afterMutation();
+      undoCount = undoCount + 1;
+    } catch (err) {
+      window.alert(
+        `You probably have to refresh the app now; something broke: ${err}`,
+      );
+    }
+  }
+
   function undo() {
     try {
       $backend!.undo();
@@ -351,7 +369,7 @@
         Download GJ of sidepaths and roads
       </button>
     {:else if tool == "edge"}
-      <p>Click an edge to collapse it</p>
+      <p>Click an edge or degenerate intersection to collapse it</p>
 
       <button
         class="outline"
@@ -365,6 +383,14 @@
         on:click={() => doBulkEdit((b) => b.removeAllServiceRoads())}
       >
         Remove all service roads
+      </button>
+
+      <button
+        class="outline"
+        on:click={() =>
+          doBulkEdit((b) => b.collapseAllDegenerateIntersections())}
+      >
+        Collapse all degenerate intersections
       </button>
     {:else if tool == "width"}
       <p>Hover on an edge to measure its width</p>
@@ -559,6 +585,8 @@
           "circle-opacity": showSimplified ? 1 : 0.5,
         }}
         layout={{ visibility: showIntersections ? "visible" : "none" }}
+        hoverCursor={tool == "edge" ? "pointer" : undefined}
+        on:click={clickIntersection}
       />
     </GeoJSON>
 

@@ -1,4 +1,6 @@
-use crate::RoadBundler;
+use geo::LineString;
+
+use crate::{IntersectionID, RoadBundler};
 
 impl RoadBundler {
     pub fn remove_all_service_roads(&mut self) {
@@ -23,5 +25,41 @@ impl RoadBundler {
         for i in remove_intersections {
             self.graph.remove_empty_intersection(i);
         }
+    }
+
+    pub fn collapse_degenerate_intersection(&mut self, id: IntersectionID) {
+        let edges = self.graph.intersections[&id].edges.clone();
+        assert_eq!(edges.len(), 2);
+        let mut edge1 = self.graph.remove_edge(edges[0]);
+        let mut edge2 = self.graph.remove_edge(edges[1]);
+        self.graph.remove_empty_intersection(id);
+
+        // Make edge1 point to id
+        let mut pts = Vec::new();
+        let i1 = if edge1.src == id {
+            edge1.linestring.0.reverse();
+            edge1.dst
+        } else {
+            edge1.src
+        };
+        pts.extend(edge1.linestring.0);
+
+        // Make edge2 point away from id
+        let i2 = if edge2.src == id {
+            edge2.dst
+        } else {
+            edge2.linestring.0.reverse();
+            edge2.src
+        };
+        pts.extend(edge2.linestring.0);
+
+        let e = self.graph.create_new_edge(LineString::new(pts), i1, i2);
+        let new_edge = self.graph.edges.get_mut(&e).unwrap();
+        new_edge
+            .associated_original_edges
+            .extend(edge1.associated_original_edges);
+        new_edge
+            .associated_original_edges
+            .extend(edge2.associated_original_edges);
     }
 }
