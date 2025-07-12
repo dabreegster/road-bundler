@@ -36,8 +36,8 @@ static START: Once = Once::new();
 #[wasm_bindgen]
 pub struct RoadBundler {
     original_graph: Graph,
-    buildings_rtree: RTree<Polygon>,
-    building_centroids: Vec<Point>,
+    buildings: RTree<Polygon>,
+    building_centroids: RTree<Point>,
     commands: Vec<Command>,
 
     // Derived
@@ -66,13 +66,13 @@ impl RoadBundler {
             graph.mercator.to_mercator_in_place(polygon);
             building_centroids.extend(polygon.centroid());
         }
-        let buildings_rtree =
-            RTree::bulk_load(buildings.polygons.into_iter().map(|(_, p)| p).collect());
+        let buildings = RTree::bulk_load(buildings.polygons.into_iter().map(|(_, p)| p).collect());
+        let building_centroids = RTree::bulk_load(building_centroids);
 
         let faces = make_faces(&graph, &building_centroids);
         Ok(Self {
             original_graph: graph.clone(),
-            buildings_rtree,
+            buildings,
             building_centroids,
             commands: Vec::new(),
 

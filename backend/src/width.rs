@@ -22,7 +22,7 @@ pub fn debug_road_width(bundler: &RoadBundler, e: EdgeID) -> Result<String> {
 
             test_lines.extend(shortest_line_hitting_polygon(
                 full_line,
-                &bundler.buildings_rtree,
+                &bundler.buildings,
                 &mut num_hit_checks,
             ));
         }

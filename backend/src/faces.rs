@@ -36,7 +36,7 @@ pub enum FaceKind {
     SidepathArtifact,
 }
 
-pub fn make_faces(graph: &Graph, building_centroids: &Vec<Point>) -> BTreeMap<FaceID, Face> {
+pub fn make_faces(graph: &Graph, building_centroids: &RTree<Point>) -> BTreeMap<FaceID, Face> {
     info!("Splitting {} edges into faces", graph.edges.len());
     let polygons = split_polygon(
         &graph.boundary_polygon,
@@ -55,8 +55,10 @@ pub fn make_faces(graph: &Graph, building_centroids: &Vec<Point>) -> BTreeMap<Fa
     info!("Matching {} faces with edges", polygons.len());
     let mut faces = BTreeMap::new();
     for polygon in polygons {
+        let bbox = aabb(&polygon);
+
         let boundary_edges = closest_edge
-            .locate_in_envelope_intersecting(&aabb(&polygon))
+            .locate_in_envelope_intersecting(&bbox)
             .filter_map(|obj| {
                 if linestring_along_polygon(obj.geom(), &polygon) {
                     Some(obj.data)
@@ -67,7 +69,7 @@ pub fn make_faces(graph: &Graph, building_centroids: &Vec<Point>) -> BTreeMap<Fa
             .collect();
         let (boundary_intersections, connecting_edges) = find_connections(graph, &boundary_edges);
         let num_buildings = building_centroids
-            .iter()
+            .locate_in_envelope_intersecting(&bbox)
             .filter(|pt| polygon.contains(*pt))
             .count();
         let has_parking_aisle = boundary_edges
@@ -105,6 +107,7 @@ pub fn make_faces(graph: &Graph, building_centroids: &Vec<Point>) -> BTreeMap<Fa
             },
         );
     }
+    info!("Done");
     faces
 }
 
