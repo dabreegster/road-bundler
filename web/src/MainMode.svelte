@@ -22,11 +22,18 @@
     Polygon,
     Point,
   } from "geojson";
-  import { isLine, isPoint, emptyGeojson, Popup } from "svelte-utils/map";
+  import {
+    isLine,
+    isPoint,
+    emptyGeojson,
+    Popup,
+    makeRamp,
+  } from "svelte-utils/map";
   import {
     PropertiesTable,
     QualitativeLegend,
     downloadGeneratedFile,
+    SequentialLegend,
   } from "svelte-utils";
 
   interface FaceProps {
@@ -82,6 +89,11 @@
     $backend!.getOriginalOsmGraph(),
   );
   let originalEdges = getOriginalEdges();
+
+  let allRoadWidths: FeatureCollection = emptyGeojson();
+  // TODO Narrowest is barely visible
+  let widthColorScale = ["#f1eef6", "#d7b5d8", "#df65b0", "#dd1c77", "#980043"];
+  let widthLimits = [0, 10, 20, 30, 40, 100];
 
   let tool: Tool = "explore";
   let undoCount = 0;
@@ -298,6 +310,10 @@
     );
   }
 
+  function getAllRoadWidths() {
+    allRoadWidths = JSON.parse($backend!.getAllRoadWidths());
+  }
+
   function doAllSimplifications() {
     doBulkEdit((b) => {
       return (
@@ -407,6 +423,10 @@
       </button>
     {:else if tool == "width"}
       <p>Hover on an edge to measure its width</p>
+
+      <button class="outline" on:click={getAllRoadWidths}>
+        Get all road widths
+      </button>
     {/if}
   </div>
 
@@ -482,6 +502,13 @@
 
           <DebuggerLegend data={debuggedFace} />
           <DebuggerLegend data={debuggedEdge} />
+
+          {#if tool == "width"}
+            <SequentialLegend
+              colorScale={widthColorScale}
+              labels={{ limits: widthLimits }}
+            />
+          {/if}
         </details>
       </div>
     </Control>
@@ -608,6 +635,26 @@
         hoverCursor={tool == "edge" ? "pointer" : undefined}
         on:click={clickIntersection}
       />
+    </GeoJSON>
+
+    <GeoJSON data={allRoadWidths} generateId>
+      <LineLayer
+        id="road-widths"
+        beforeId="edges"
+        paint={{
+          "line-width": 30,
+          "line-color": makeRamp(
+            ["get", "min_width"],
+            widthLimits,
+            widthColorScale,
+          ),
+        }}
+        layout={{ visibility: tool == "width" ? "visible" : "none" }}
+      >
+        <Popup openOn="hover" let:props>
+          {Math.round(props.min_width)}
+        </Popup>
+      </LineLayer>
     </GeoJSON>
 
     {#if $backend}

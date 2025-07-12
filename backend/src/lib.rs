@@ -164,6 +164,11 @@ impl RoadBundler {
         width::debug_road_width(self, EdgeID(id)).map_err(err_to_js)
     }
 
+    #[wasm_bindgen(js_name = getAllRoadWidths)]
+    pub fn get_all_road_widths_wasm(&self) -> Result<String, JsValue> {
+        width::get_all_road_widths(self).map_err(err_to_js)
+    }
+
     #[wasm_bindgen(js_name = undo)]
     pub fn undo(&mut self) {
         self.commands.pop();

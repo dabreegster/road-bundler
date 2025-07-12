@@ -1,44 +1,57 @@
 use anyhow::Result;
 use geo::{Coord, Densify, Euclidean, Length, Line, LineIntersection, LineString, Polygon};
+use geojson::GeoJson;
 use rstar::{RTree, RTreeObject};
 
 use crate::{Debugger, EdgeID, RoadBundler};
 
 pub fn debug_road_width(bundler: &RoadBundler, e: EdgeID) -> Result<String> {
+    let mut debugger = Debugger::new(bundler.graph.mercator.clone());
+    for ls in get_road_widths(bundler, e) {
+        debugger.line(&ls, "test line", "red", 2, 1.0);
+    }
+    Ok(serde_json::to_string(&debugger.build())?)
+}
+
+pub fn get_all_road_widths(bundler: &RoadBundler) -> Result<String> {
+    let mut features = Vec::new();
+    for (id, edge) in &bundler.graph.edges {
+        let lines = get_road_widths(bundler, *id);
+        if let Some(min) = lines
+            .into_iter()
+            .map(|ls| Euclidean.length(&ls))
+            .min_by_key(|x| (*x * 1000.) as usize)
+        {
+            let mut f = bundler.graph.mercator.to_wgs84_gj(&edge.linestring);
+            f.set_property("min_width", min);
+            features.push(f);
+        }
+    }
+    Ok(serde_json::to_string(&GeoJson::from(features))?)
+}
+
+fn get_road_widths(bundler: &RoadBundler, e: EdgeID) -> Vec<LineString> {
     let step_size_meters = 10.0;
     let project_away_meters = 50.0;
 
     let test_points = points_along_line(&bundler.graph.edges[&e].linestring, step_size_meters);
-    let mut num_perps = 0;
-    let mut num_hit_checks = 0;
-    let mut debugger = Debugger::new(bundler.graph.mercator.clone());
+    let mut output = Vec::new();
     for (pt, angle) in test_points {
-        num_perps += 1;
-
         let mut test_lines = Vec::new();
         for angle_offset in [-90.0, 90.0] {
             let projected = project_away(pt, angle + angle_offset, project_away_meters);
             let full_line = Line::new(pt, projected);
 
-            test_lines.extend(shortest_line_hitting_polygon(
-                full_line,
-                &bundler.buildings,
-                &mut num_hit_checks,
-            ));
+            test_lines.extend(shortest_line_hitting_polygon(full_line, &bundler.buildings));
         }
         // If either of the test lines doesn't hit anything within project_away_meters, then
         // something's probably wrong -- skip it as output
         if test_lines.len() != 2 {
             continue;
         }
-        let full_line = LineString::new(vec![test_lines[0].end, test_lines[1].end]);
-        debugger.line(&full_line, "test line", "red", 2, 1.0);
+        output.push(LineString::new(vec![test_lines[0].end, test_lines[1].end]));
     }
-    info!(
-        "Tried {} perpendiculars, with a total of {} line hit checks",
-        num_perps, num_hit_checks
-    );
-    Ok(serde_json::to_string(&debugger.build())?)
+    output
 }
 
 // TODO Move to geo_helpers...
@@ -69,16 +82,11 @@ fn project_away(pt: Coord, angle_degrees: f64, distance: f64) -> Coord {
 
 // Assuming line.start is outside all of the polygons, looks for all possible intersections between
 // the line and a polygon, and trims the line back to the edge of the nearest polygon
-fn shortest_line_hitting_polygon(
-    line: Line,
-    rtree: &RTree<Polygon>,
-    num_hit_checks: &mut usize,
-) -> Option<Line> {
+fn shortest_line_hitting_polygon(line: Line, rtree: &RTree<Polygon>) -> Option<Line> {
     let mut shortest: Option<(Line, f64)> = None;
     for polygon in rtree.locate_in_envelope_intersecting(&line.envelope()) {
         // Ignore polygon holes
         for polygon_line in polygon.exterior().lines() {
-            *num_hit_checks += 1;
             if let Some(LineIntersection::SinglePoint { intersection, .. }) =
                 geo::algorithm::line_intersection::line_intersection(line, polygon_line)
             {
