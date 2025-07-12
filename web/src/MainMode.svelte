@@ -298,6 +298,14 @@
     );
   }
 
+  function doAllSimplifications() {
+    doBulkEdit((b) => {
+      b.removeAllSidepaths();
+      b.removeAllServiceRoads();
+      b.collapseAllDegenerateIntersections();
+    });
+  }
+
   // TS fail
   $: faceFillColor = [
     "case",
@@ -326,6 +334,9 @@
 
     {#if tool == "explore"}
       <p>Just pan around the map</p>
+      <button class="outline" on:click={doAllSimplifications}>
+        Do all simplifications
+      </button>
     {:else if tool == "collapseToCentroid"}
       <p>Click to collapse a face to its centroid</p>
     {:else if tool == "dualCarriageway"}
@@ -400,69 +411,76 @@
   <div slot="map">
     <Control position="top-right">
       <div class="map-panel">
-        <label>
-          <u>S</u>
-          how original OSM
-          <input type="checkbox" role="switch" bind:checked={showSimplified} />
-          <u>S</u>
-          how simplified graph
-        </label>
+        <details open>
+          <summary>Layers</summary>
+          <label>
+            <u>S</u>
+            how original OSM
+            <input
+              type="checkbox"
+              role="switch"
+              bind:checked={showSimplified}
+            />
+            <u>S</u>
+            how simplified graph
+          </label>
 
-        <br />
+          <br />
 
-        <label>
-          <input type="checkbox" bind:checked={showEdges} />
-          Show edges
-        </label>
+          <label>
+            <input type="checkbox" bind:checked={showEdges} />
+            Show edges
+          </label>
 
-        <label>
-          <input type="checkbox" bind:checked={showIntersections} />
-          Show intersections
-        </label>
+          <label>
+            <input type="checkbox" bind:checked={showIntersections} />
+            Show intersections
+          </label>
 
-        <label>
-          <input type="checkbox" bind:checked={showBuildings} />
-          Show building centroids
-        </label>
+          <label>
+            <input type="checkbox" bind:checked={showBuildings} />
+            Show building centroids
+          </label>
 
-        <hr />
+          <hr />
 
-        <QualitativeLegend
-          labelColors={{
-            "urban block": colors.UrbanBlock,
-            "road artifact": colors.RoadArtifact,
-            "sidepath artifact": colors.SidepathArtifact,
-          }}
-          itemsPerRow={3}
-        />
+          <QualitativeLegend
+            labelColors={{
+              "urban block": colors.UrbanBlock,
+              "road artifact": colors.RoadArtifact,
+              "sidepath artifact": colors.SidepathArtifact,
+            }}
+            itemsPerRow={3}
+          />
 
-        <label>
-          <input type="checkbox" bind:checked={showFaces} />
-          Show faces
-        </label>
+          <label>
+            <input type="checkbox" bind:checked={showFaces} />
+            Show faces
+          </label>
 
-        <label>
-          <input type="checkbox" bind:checked={showUrbanBlocks} />
-          Show urban blocks
-        </label>
+          <label>
+            <input type="checkbox" bind:checked={showUrbanBlocks} />
+            Show urban blocks
+          </label>
 
-        <hr />
+          <hr />
 
-        <QualitativeLegend
-          labelColors={{
-            "OSM road edge": colors.OsmRoadEdge,
-            "OSM sidewalk/cycleway edge": colors.OsmSidepathEdge,
-            "OSM intersection": colors.OsmIntersection,
-            "synthetic edge": colors.SyntheticEdge,
-            "synthetic intersection": colors.SyntheticIntersection,
-          }}
-          itemsPerRow={1}
-        />
+          <QualitativeLegend
+            labelColors={{
+              "OSM road edge": colors.OsmRoadEdge,
+              "OSM sidewalk/cycleway edge": colors.OsmSidepathEdge,
+              "OSM intersection": colors.OsmIntersection,
+              "synthetic edge": colors.SyntheticEdge,
+              "synthetic intersection": colors.SyntheticIntersection,
+            }}
+            itemsPerRow={1}
+          />
 
-        <hr />
+          <hr />
 
-        <DebuggerLegend data={debuggedFace} />
-        <DebuggerLegend data={debuggedEdge} />
+          <DebuggerLegend data={debuggedFace} />
+          <DebuggerLegend data={debuggedEdge} />
+        </details>
       </div>
     </Control>
 
