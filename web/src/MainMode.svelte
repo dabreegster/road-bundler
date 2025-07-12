@@ -652,7 +652,7 @@
         layout={{ visibility: tool == "width" ? "visible" : "none" }}
       >
         <Popup openOn="hover" let:props>
-          {Math.round(props.min_width)}
+          {Math.round(props.min_width)} to {Math.round(props.max_width)}
         </Popup>
       </LineLayer>
     </GeoJSON>

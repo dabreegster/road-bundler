@@ -17,17 +17,22 @@ pub fn get_all_road_widths(bundler: &RoadBundler) -> Result<String> {
     let mut features = Vec::new();
     for (id, edge) in &bundler.graph.edges {
         let lines = get_road_widths(bundler, *id);
-        if let Some(min) = lines
-            .into_iter()
-            .map(|ls| Euclidean.length(&ls))
-            .min_by_key(|x| (*x * 1000.) as usize)
-        {
+        let widths: Vec<f64> = lines.into_iter().map(|ls| Euclidean.length(&ls)).collect();
+        if let (Some(min), Some(max)) = (
+            widths.iter().min_by_key(round),
+            widths.iter().max_by_key(round),
+        ) {
             let mut f = bundler.graph.mercator.to_wgs84_gj(&edge.linestring);
-            f.set_property("min_width", min);
+            f.set_property("min_width", *min);
+            f.set_property("max_width", *max);
             features.push(f);
         }
     }
     Ok(serde_json::to_string(&GeoJson::from(features))?)
+}
+
+fn round(x: &&f64) -> usize {
+    (*x * 1000.) as usize
 }
 
 fn get_road_widths(bundler: &RoadBundler, e: EdgeID) -> Vec<LineString> {
