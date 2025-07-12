@@ -46,6 +46,15 @@ impl Edge {
         }
     }
 
+    pub fn is_service_road(&self) -> bool {
+        match self.provenance {
+            EdgeProvenance::OSM { ref tags, .. } => {
+                tags.is_any("highway", vec!["corridor", "service"])
+            }
+            EdgeProvenance::Synthetic => false,
+        }
+    }
+
     // TODO Rename and handle more cases
     pub fn is_sidewalk_or_cycleway(&self) -> bool {
         match self.provenance {

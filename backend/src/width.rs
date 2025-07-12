@@ -6,7 +6,7 @@ use crate::{Debugger, EdgeID, RoadBundler};
 
 pub fn debug_road_width(bundler: &RoadBundler, e: EdgeID) -> Result<String> {
     let step_size_meters = 10.0;
-    let project_away_meters = 30.0;
+    let project_away_meters = 50.0;
 
     let test_points = points_along_line(&bundler.graph.edges[&e].linestring, step_size_meters);
     let mut num_perps = 0;

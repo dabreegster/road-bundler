@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { RoadBundler } from "backend";
   import DebuggerLayer from "./DebuggerLayer.svelte";
   import DebuggerLegend from "./DebuggerLegend.svelte";
   import ToolSwitcher from "./ToolSwitcher.svelte";
@@ -161,49 +162,9 @@
     }
   }
 
-  function fixAllDCs() {
+  function doBulkEdit(cb: (b: RoadBundler) => number) {
     try {
-      let newCommands = $backend!.fixAllDualCarriageways();
-
-      afterMutation();
-      undoCount = undoCount + newCommands;
-    } catch (err) {
-      window.alert(
-        `You probably have to refresh the app now; something broke: ${err}`,
-      );
-    }
-  }
-
-  function fixAllSidepaths() {
-    try {
-      let newCommands = $backend!.fixAllSidepaths();
-
-      afterMutation();
-      undoCount = undoCount + newCommands;
-    } catch (err) {
-      window.alert(
-        `You probably have to refresh the app now; something broke: ${err}`,
-      );
-    }
-  }
-
-  function removeAllSidepaths() {
-    try {
-      $backend!.removeAllSidepaths();
-
-      afterMutation();
-      undoCount += 1;
-    } catch (err) {
-      window.alert(
-        `You probably have to refresh the app now; something broke: ${err}`,
-      );
-    }
-  }
-
-  function fixAllDogLegs() {
-    try {
-      let newCommands = $backend!.fixAllDogLegs();
-
+      let newCommands = cb($backend!);
       afterMutation();
       undoCount = undoCount + newCommands;
     } catch (err) {
@@ -352,7 +313,12 @@
     {:else if tool == "dualCarriageway"}
       <p>Click to collapse a dual carriageway</p>
 
-      <button class="outline" on:click={fixAllDCs}>Collapse all DCs</button>
+      <button
+        class="outline"
+        on:click={() => doBulkEdit((b) => b.fixAllDualCarriageways())}
+      >
+        Collapse all DCs
+      </button>
 
       {#if hoveredFace}
         {#if typeof hoveredFace.properties.dual_carriageway == "string"}
@@ -367,11 +333,17 @@
     {:else if tool == "sidepath"}
       <p>Click to merge a sidepath into the road</p>
 
-      <button class="outline" on:click={fixAllSidepaths}>
+      <button
+        class="outline"
+        on:click={() => doBulkEdit((b) => b.fixAllSidepaths())}
+      >
         Merge all sidepaths
       </button>
 
-      <button class="outline" on:click={removeAllSidepaths}>
+      <button
+        class="outline"
+        on:click={() => doBulkEdit((b) => b.removeAllSidepaths())}
+      >
         Remove all sidepaths
       </button>
 
@@ -381,8 +353,18 @@
     {:else if tool == "edge"}
       <p>Click an edge to collapse it</p>
 
-      <button class="outline" on:click={fixAllDogLegs}>
+      <button
+        class="outline"
+        on:click={() => doBulkEdit((b) => b.fixAllDogLegs())}
+      >
         Collapse all dog-leg intersections
+      </button>
+
+      <button
+        class="outline"
+        on:click={() => doBulkEdit((b) => b.removeAllServiceRoads())}
+      >
+        Remove all service roads
       </button>
     {:else if tool == "width"}
       <p>Hover on an edge to measure its width</p>

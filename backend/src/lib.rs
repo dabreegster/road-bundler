@@ -19,6 +19,7 @@ use crate::debugger::Debugger;
 use crate::faces::{make_faces, Face, FaceID, FaceKind};
 use crate::graph::{EdgeID, Graph, Intersection, IntersectionID, IntersectionProvenance};
 
+mod clean;
 mod debugger;
 mod dog_leg;
 mod dual_carriageway;
@@ -240,10 +241,19 @@ impl RoadBundler {
     }
 
     #[wasm_bindgen(js_name = removeAllSidepaths)]
-    pub fn remove_all_sidepaths_wasm(&mut self) {
+    pub fn remove_all_sidepaths_wasm(&mut self) -> usize {
         let cmd = Command::RemoveAllSidepaths;
         self.commands.push(cmd);
         self.apply_cmd(cmd);
+        1
+    }
+
+    #[wasm_bindgen(js_name = removeAllServiceRoads)]
+    pub fn remove_all_service_roads_wasm(&mut self) -> usize {
+        let cmd = Command::RemoveAllServiceRoads;
+        self.commands.push(cmd);
+        self.apply_cmd(cmd);
+        1
     }
 
     #[wasm_bindgen(js_name = collapseEdge)]
@@ -286,6 +296,7 @@ impl RoadBundler {
             Command::MergeSidepath(face) => self.merge_sidepath(face),
             Command::CollapseEdge(edge) => self.collapse_edge(edge),
             Command::RemoveAllSidepaths => self.remove_all_sidepaths(),
+            Command::RemoveAllServiceRoads => self.remove_all_service_roads(),
         }
         self.faces = make_faces(&self.graph, &self.building_centroids);
     }
@@ -298,6 +309,7 @@ pub enum Command {
     CollapseDualCarriageway(FaceID),
     MergeSidepath(FaceID),
     RemoveAllSidepaths,
+    RemoveAllServiceRoads,
     CollapseEdge(EdgeID),
 }
 
