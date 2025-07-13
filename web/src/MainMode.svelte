@@ -148,6 +148,8 @@
       let f = e.detail.features[0];
       if (tool == "dogleg") {
         $backend!.collapseEdge(f.properties!.edge_id);
+      } else if (tool == "clean") {
+        $backend!.removeEdge(f.properties!.edge_id);
       } else {
         return;
       }
@@ -579,7 +581,10 @@
         hoverCursor="pointer"
         on:click={clickEdge}
       >
-        <Popup openOn={tool == "dogleg" ? "hover" : "click"} let:props>
+        <Popup
+          openOn={tool == "dogleg" || tool == "clean" ? "hover" : "click"}
+          let:props
+        >
           {#if props.provenance == "Synthetic"}
             <h4>Edge {props.edge_id}, synthetic</h4>
           {:else}

@@ -1,8 +1,17 @@
 use geo::LineString;
 
-use crate::{IntersectionID, RoadBundler};
+use crate::{EdgeID, IntersectionID, RoadBundler};
 
 impl RoadBundler {
+    pub fn remove_edge(&mut self, id: EdgeID) {
+        let edge = self.graph.remove_edge(id);
+        for i in [edge.src, edge.dst] {
+            if self.graph.intersections[&i].edges.is_empty() {
+                self.graph.remove_empty_intersection(i);
+            }
+        }
+    }
+
     pub fn remove_all_service_roads(&mut self) {
         let remove_edges: Vec<_> = self
             .graph

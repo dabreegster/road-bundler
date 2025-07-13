@@ -253,6 +253,14 @@ impl RoadBundler {
         1
     }
 
+    #[wasm_bindgen(js_name = removeEdge)]
+    pub fn remove_edge_wasm(&mut self, id: usize) -> usize {
+        let cmd = Command::RemoveEdge(EdgeID(id));
+        self.commands.push(cmd);
+        self.apply_cmd(cmd);
+        1
+    }
+
     #[wasm_bindgen(js_name = removeAllServiceRoads)]
     pub fn remove_all_service_roads_wasm(&mut self) -> usize {
         let cmd = Command::RemoveAllServiceRoads;
@@ -337,6 +345,7 @@ impl RoadBundler {
             Command::CollapseEdge(edge) => self.collapse_edge(edge),
             Command::RemoveAllSidepaths => self.remove_all_sidepaths(),
             Command::RemoveAllServiceRoads => self.remove_all_service_roads(),
+            Command::RemoveEdge(edge) => self.remove_edge(edge),
             Command::CollapseDegenerateIntersection(i) => self.collapse_degenerate_intersection(i),
         }
         self.faces = make_faces(&self.graph, &self.building_centroids);
@@ -350,6 +359,7 @@ pub enum Command {
     CollapseDualCarriageway(FaceID),
     MergeSidepath(FaceID),
     RemoveAllSidepaths,
+    RemoveEdge(EdgeID),
     RemoveAllServiceRoads,
     CollapseDegenerateIntersection(IntersectionID),
     CollapseEdge(EdgeID),
