@@ -370,7 +370,10 @@ fn err_to_js<E: std::fmt::Display>(err: E) -> JsValue {
 }
 
 fn keep_edge(tags: &Tags) -> bool {
-    if !tags.has("highway") || tags.is("highway", "proposed") || tags.is("area", "yes") {
+    if !tags.has("highway")
+        || tags.is_any("highway", vec!["construction", "proposed"])
+        || tags.is("area", "yes")
+    {
         return false;
     }
     true

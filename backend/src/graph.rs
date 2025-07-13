@@ -60,7 +60,9 @@ impl Edge {
         match self.provenance {
             EdgeProvenance::OSM { ref tags, .. } => tags.is_any(
                 "highway",
-                vec!["footway", "cycleway", "path", "platform", "steps"],
+                vec![
+                    "footway", "cycleway", "elevator", "path", "platform", "steps", "track",
+                ],
             ),
             EdgeProvenance::Synthetic => false,
         }
