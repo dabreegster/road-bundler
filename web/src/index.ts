@@ -8,8 +8,8 @@ export type Tool =
   | "collapseToCentroid"
   | "dualCarriageway"
   | "sidepath"
-  // TODO Starting to abuse this one...
-  | "edge"
+  | "dogleg"
+  | "clean"
   | "width";
 
 export let colors = {

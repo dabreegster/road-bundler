@@ -8,7 +8,8 @@
     ["collapseToCentroid", "Roundabouts", "fa-regular fa-circle"],
     ["dualCarriageway", "Dual carriageways", "fa-solid fa-grip-lines-vertical"],
     ["sidepath", "Sidepaths", "fa-solid fa-lines-leaning"],
-    ["edge", "Edges", "fa-solid fa-dog"],
+    ["dogleg", "Dog-leg", "fa-solid fa-dog"],
+    ["clean", "Cleanup", "fa-solid fa-broom"],
     ["width", "Road width", "fa-solid fa-ruler-horizontal"],
   ];
 
@@ -22,8 +23,10 @@
     } else if (e.key == "4") {
       tool = "sidepath";
     } else if (e.key == "5") {
-      tool = "edge";
+      tool = "dogleg";
     } else if (e.key == "6") {
+      tool = "clean";
+    } else if (e.key == "7") {
       tool = "width";
     }
   }

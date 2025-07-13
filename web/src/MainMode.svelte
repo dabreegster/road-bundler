@@ -146,7 +146,7 @@
   function clickEdge(e: CustomEvent<LayerClickInfo>) {
     try {
       let f = e.detail.features[0];
-      if (tool == "edge") {
+      if (tool == "dogleg") {
         $backend!.collapseEdge(f.properties!.edge_id);
       } else {
         return;
@@ -164,7 +164,7 @@
   function clickIntersection(e: CustomEvent<LayerClickInfo>) {
     try {
       let f = e.detail.features[0];
-      if (tool == "edge") {
+      if (tool == "clean") {
         $backend!.collapseDegenerateIntersection(f.properties!.intersection_id);
       } else {
         return;
@@ -397,8 +397,8 @@
       <button class="outline" on:click={downloadSidepathsAndRoads}>
         Download GJ of sidepaths and roads
       </button>
-    {:else if tool == "edge"}
-      <p>Click an edge or degenerate intersection to collapse it</p>
+    {:else if tool == "dogleg"}
+      <p>Click a dog-leg edge to collapse it</p>
 
       <button
         class="outline"
@@ -406,6 +406,8 @@
       >
         Collapse all dog-leg intersections
       </button>
+    {:else if tool == "clean"}
+      <p>Click an edge or degenerate intersection to collapse it</p>
 
       <button
         class="outline"
@@ -500,15 +502,15 @@
 
           <hr />
 
-          <DebuggerLegend data={debuggedFace} />
-          <DebuggerLegend data={debuggedEdge} />
-
           {#if tool == "width"}
             <SequentialLegend
               colorScale={widthColorScale}
               labels={{ limits: widthLimits }}
             />
           {/if}
+
+          <DebuggerLegend data={debuggedFace} />
+          <DebuggerLegend data={debuggedEdge} />
         </details>
       </div>
     </Control>
@@ -577,7 +579,7 @@
         hoverCursor="pointer"
         on:click={clickEdge}
       >
-        <Popup openOn={tool == "edge" ? "hover" : "click"} let:props>
+        <Popup openOn={tool == "dogleg" ? "hover" : "click"} let:props>
           {#if props.provenance == "Synthetic"}
             <h4>Edge {props.edge_id}, synthetic</h4>
           {:else}
@@ -632,7 +634,7 @@
           "circle-opacity": showSimplified ? 1 : 0.5,
         }}
         layout={{ visibility: showIntersections ? "visible" : "none" }}
-        hoverCursor={tool == "edge" ? "pointer" : undefined}
+        hoverCursor={tool == "clean" ? "pointer" : undefined}
         on:click={clickIntersection}
       />
     </GeoJSON>
