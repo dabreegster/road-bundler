@@ -1,19 +1,28 @@
 use std::collections::HashMap;
 
-use geo::{Coord, LineString, Polygon};
+use geo::{Centroid, Coord, LineString, Point, Polygon};
 use osm_reader::{NodeID, OsmID, RelationID, WayID};
-use utils::{osm2graph::OsmReader, Tags};
+use rstar::RTree;
+use utils::{osm2graph::OsmReader, Mercator, Tags};
+
+pub struct Areas {
+    pub building_polygons: RTree<Polygon>,
+    pub building_centroids: RTree<Point>,
+
+    pub other_polygons: RTree<Polygon>,
+    pub other_centroids: RTree<Point>,
+}
 
 // TODO Ignores holes
 #[derive(Default)]
-pub struct OsmAreas {
+pub struct ReadOsmAreas {
     // TODO Maybe OsmID to capture relations fully
-    pub polygons: Vec<(WayID, AreaKind, Polygon)>,
+    polygons: Vec<(WayID, AreaKind, Polygon)>,
     possible_area_parts: HashMap<WayID, Polygon>,
 }
 
 #[derive(Clone, Copy, PartialEq)]
-pub enum AreaKind {
+enum AreaKind {
     Building,
     Water,
     Park,
@@ -33,7 +42,7 @@ impl AreaKind {
     }
 }
 
-impl OsmReader for OsmAreas {
+impl OsmReader for ReadOsmAreas {
     fn node(&mut self, _: NodeID, _: Coord, _: Tags) {}
 
     fn way(
@@ -75,6 +84,36 @@ impl OsmReader for OsmAreas {
                     self.polygons.push((*way, kind, polygon));
                 }
             }
+        }
+    }
+}
+
+impl ReadOsmAreas {
+    pub fn finalize(self, mercator: &Mercator) -> Areas {
+        let mut building_polygons = Vec::new();
+        let mut building_centroids = Vec::new();
+        let mut other_polygons = Vec::new();
+        let mut other_centroids = Vec::new();
+
+        for (_, kind, mut polygon) in self.polygons {
+            mercator.to_mercator_in_place(&mut polygon);
+            if kind == AreaKind::Building {
+                building_centroids.extend(polygon.centroid());
+                building_polygons.push(polygon);
+            } else {
+                other_centroids.extend(polygon.centroid());
+                other_polygons.push(polygon);
+            }
+        }
+        let building_polygons = RTree::bulk_load(building_polygons);
+        let building_centroids = RTree::bulk_load(building_centroids);
+        let other_polygons = RTree::bulk_load(other_polygons);
+        let other_centroids = RTree::bulk_load(other_centroids);
+        Areas {
+            building_polygons,
+            building_centroids,
+            other_polygons,
+            other_centroids,
         }
     }
 }

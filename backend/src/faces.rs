@@ -11,7 +11,8 @@ use rstar::{primitives::GeomWithData, RTree, AABB};
 
 use crate::geo_helpers::SliceNearEndpoints;
 use crate::{
-    Debugger, EdgeID, Graph, Intersection, IntersectionID, IntersectionProvenance, RoadBundler,
+    Areas, Debugger, EdgeID, Graph, Intersection, IntersectionID, IntersectionProvenance,
+    RoadBundler,
 };
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
@@ -34,13 +35,20 @@ pub enum FaceKind {
     RoadArtifact,
     /// The space between a road and a sidewalk or cyclepath
     SidepathArtifact,
+    /// Water or a park -- and no roads inside?
+    OtherArea,
 }
 
-pub fn make_faces(graph: &Graph, building_centroids: &RTree<Point>) -> BTreeMap<FaceID, Face> {
+pub fn make_faces(graph: &Graph, areas: &Areas) -> BTreeMap<FaceID, Face> {
     info!("Splitting {} edges into faces", graph.edges.len());
     let polygons = split_polygon(
         &graph.boundary_polygon,
-        graph.edges.values().map(|edge| &edge.linestring),
+        graph.edges.values().map(|edge| &edge.linestring).chain(
+            areas
+                .other_polygons
+                .iter()
+                .map(|polygon| polygon.exterior()),
+        ),
     );
 
     info!("Building rtree for {} edges", graph.edges.len());
@@ -68,7 +76,13 @@ pub fn make_faces(graph: &Graph, building_centroids: &RTree<Point>) -> BTreeMap<
             })
             .collect();
         let (boundary_intersections, connecting_edges) = find_connections(graph, &boundary_edges);
-        let num_buildings = building_centroids
+        let num_buildings = areas
+            .building_centroids
+            .locate_in_envelope_intersecting(&bbox)
+            .filter(|pt| polygon.contains(*pt))
+            .count();
+        let num_other_areas = areas
+            .other_centroids
             .locate_in_envelope_intersecting(&bbox)
             .filter(|pt| polygon.contains(*pt))
             .count();
@@ -86,6 +100,8 @@ pub fn make_faces(graph: &Graph, building_centroids: &RTree<Point>) -> BTreeMap<
         }
         let kind = if num_buildings > 0 {
             FaceKind::UrbanBlock
+        } else if num_other_areas > 0 {
+            FaceKind::OtherArea
         } else if num_roads > 0 && num_non_roads > 0 {
             FaceKind::SidepathArtifact
         } else if has_parking_aisle {

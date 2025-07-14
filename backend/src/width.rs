@@ -48,7 +48,13 @@ fn get_road_widths(bundler: &RoadBundler, e: EdgeID) -> Vec<LineString> {
             let projected = project_away(pt, angle + angle_offset, project_away_meters);
             let full_line = Line::new(pt, projected);
 
-            test_lines.extend(shortest_line_hitting_polygon(full_line, &bundler.buildings));
+            test_lines.extend(shortest_line_hitting_polygon(
+                full_line,
+                vec![
+                    &bundler.areas.building_polygons,
+                    &bundler.areas.other_polygons,
+                ],
+            ));
         }
         // If either of the test lines doesn't hit anything within project_away_meters, then
         // something's probably wrong -- skip it as output
@@ -70,22 +76,24 @@ fn project_away(pt: Coord, angle_degrees: f64, distance: f64) -> Coord {
 
 // Assuming line.start is outside all of the polygons, looks for all possible intersections between
 // the line and a polygon, and trims the line back to the edge of the nearest polygon
-fn shortest_line_hitting_polygon(line: Line, rtree: &RTree<Polygon>) -> Option<Line> {
+fn shortest_line_hitting_polygon(line: Line, rtrees: Vec<&RTree<Polygon>>) -> Option<Line> {
     let mut shortest: Option<(Line, f64)> = None;
-    for polygon in rtree.locate_in_envelope_intersecting(&line.envelope()) {
-        // Ignore polygon holes
-        for polygon_line in polygon.exterior().lines() {
-            if let Some(LineIntersection::SinglePoint { intersection, .. }) =
-                geo::algorithm::line_intersection::line_intersection(line, polygon_line)
-            {
-                let candidate = Line::new(line.start, intersection);
-                let candidate_length = Euclidean.length(&candidate);
-                if shortest
-                    .as_ref()
-                    .map(|(_, len)| candidate_length < *len)
-                    .unwrap_or(true)
+    for rtree in rtrees {
+        for polygon in rtree.locate_in_envelope_intersecting(&line.envelope()) {
+            // Ignore polygon holes
+            for polygon_line in polygon.exterior().lines() {
+                if let Some(LineIntersection::SinglePoint { intersection, .. }) =
+                    geo::algorithm::line_intersection::line_intersection(line, polygon_line)
                 {
-                    shortest = Some((candidate, candidate_length));
+                    let candidate = Line::new(line.start, intersection);
+                    let candidate_length = Euclidean.length(&candidate);
+                    if shortest
+                        .as_ref()
+                        .map(|(_, len)| candidate_length < *len)
+                        .unwrap_or(true)
+                    {
+                        shortest = Some((candidate, candidate_length));
+                    }
                 }
             }
         }

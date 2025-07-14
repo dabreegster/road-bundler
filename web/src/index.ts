@@ -17,6 +17,7 @@ export let colors = {
   SidepathArtifact: "yellow",
   DualCarriageway: "blue",
   RoadArtifact: "cyan",
+  OtherArea: "green",
 
   OsmRoadEdge: "black",
   OsmSidepathEdge: "grey",

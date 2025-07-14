@@ -39,7 +39,7 @@
   interface FaceProps {
     face_id: number;
     debug_hover: FeatureCollection;
-    kind: "UrbanBlock" | "RoadArtifact" | "SidepathArtifact";
+    kind: "UrbanBlock" | "RoadArtifact" | "SidepathArtifact" | "OtherArea";
 
     dual_carriageway:
       | {
@@ -333,6 +333,8 @@
     colors.UrbanBlock,
     ["==", ["get", "kind"], "SidepathArtifact"],
     colors.SidepathArtifact,
+    ["==", ["get", "kind"], "OtherArea"],
+    colors.OtherArea,
     ["!=", ["typeof", ["get", "dual_carriageway"]], "string"],
     tool == "dualCarriageway" ? colors.DualCarriageway : colors.RoadArtifact,
     colors.RoadArtifact,
@@ -475,6 +477,7 @@
               "urban block": colors.UrbanBlock,
               "road artifact": colors.RoadArtifact,
               "sidepath artifact": colors.SidepathArtifact,
+              "other area": colors.OtherArea,
             }}
             itemsPerRow={3}
           />
