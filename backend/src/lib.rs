@@ -26,7 +26,7 @@ mod dual_carriageway;
 mod faces;
 mod geo_helpers;
 mod graph;
-mod scrape_buildings;
+mod scrape_areas;
 mod sidepath;
 mod split_line;
 mod width;
@@ -55,18 +55,22 @@ impl RoadBundler {
             console_log::init_with_level(log::Level::Info).unwrap();
         });
 
-        let mut buildings = scrape_buildings::OsmBuildings::default();
-        let mut osm_graph = utils::osm2graph::Graph::new(input_bytes, keep_edge, &mut buildings)
-            .map_err(err_to_js)?;
+        let mut areas = scrape_areas::OsmAreas::default();
+        let mut osm_graph =
+            utils::osm2graph::Graph::new(input_bytes, keep_edge, &mut areas).map_err(err_to_js)?;
         osm_graph.compact_ids();
         let graph = Graph::new(osm_graph);
 
+        let mut building_polygons = Vec::new();
         let mut building_centroids = Vec::new();
-        for (_, polygon) in &mut buildings.polygons {
-            graph.mercator.to_mercator_in_place(polygon);
-            building_centroids.extend(polygon.centroid());
+        for (_, kind, mut polygon) in areas.polygons {
+            if kind == scrape_areas::AreaKind::Building {
+                graph.mercator.to_mercator_in_place(&mut polygon);
+                building_centroids.extend(polygon.centroid());
+                building_polygons.push(polygon);
+            }
         }
-        let buildings = RTree::bulk_load(buildings.polygons.into_iter().map(|(_, p)| p).collect());
+        let buildings = RTree::bulk_load(building_polygons);
         let building_centroids = RTree::bulk_load(building_centroids);
 
         let faces = make_faces(&graph, &building_centroids);
