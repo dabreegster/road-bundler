@@ -32,7 +32,6 @@
   import {
     PropertiesTable,
     QualitativeLegend,
-    downloadGeneratedFile,
     SequentialLegend,
   } from "svelte-utils";
 
@@ -124,12 +123,6 @@
           return;
         }
         $backend!.collapseDualCarriageway(f.properties!.face_id);
-      } else if (tool == "sidepath") {
-        if (f.properties!.kind != "SidepathArtifact") {
-          window.alert("This isn't a sidepath face");
-          return;
-        }
-        $backend!.mergeSidepath(f.properties!.face_id);
       } else {
         return;
       }
@@ -295,23 +288,6 @@
     return gj;
   }
 
-  function downloadSidepathsAndRoads() {
-    downloadGeneratedFile(
-      "roads.geojson",
-      JSON.stringify({
-        type: "FeatureCollection",
-        features: edges.features.filter((f) => f.properties.is_road),
-      }),
-    );
-    downloadGeneratedFile(
-      "sidepaths.geojson",
-      JSON.stringify({
-        type: "FeatureCollection",
-        features: edges.features.filter((f) => !f.properties.is_road),
-      }),
-    );
-  }
-
   function getAllRoadWidths() {
     allRoadWidths = JSON.parse($backend!.getAllRoadWidths());
   }
@@ -382,24 +358,11 @@
         {/if}
       {/if}
     {:else if tool == "sidepath"}
-      <p>Click to merge a sidepath into the road</p>
-
-      <button
-        class="outline"
-        on:click={() => doBulkEdit((b) => b.fixAllSidepaths())}
-      >
-        Merge all sidepaths
-      </button>
-
       <button
         class="outline"
         on:click={() => doBulkEdit((b) => b.removeAllSidepaths())}
       >
         Remove all sidepaths
-      </button>
-
-      <button class="outline" on:click={downloadSidepathsAndRoads}>
-        Download GJ of sidepaths and roads
       </button>
     {:else if tool == "dogleg"}
       <p>Click a dog-leg edge to collapse it</p>
@@ -534,11 +497,7 @@
         }}
         layout={{ visibility: showFaces ? "visible" : "none" }}
         bind:hovered={tmpHoveredFace}
-        hoverCursor={[
-          "collapseToCentroid",
-          "dualCarriageway",
-          "sidepath",
-        ].includes(tool)
+        hoverCursor={["collapseToCentroid", "dualCarriageway"].includes(tool)
           ? "pointer"
           : undefined}
         on:click={clickFace}
