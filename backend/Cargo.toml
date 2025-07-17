@@ -10,9 +10,9 @@ crate-type = ["cdylib", "rlib"]
 anyhow = "1.0.98"
 console_error_panic_hook = "0.1.7"
 console_log = "1.0.0"
-geo = "0.30.0"
+geo = { git = "https://github.com/dabreegster/geo", branch = "new_ioverlay" }
 geojson = { git = "https://github.com/georust/geojson", features = ["geo-types"] }
-i_overlay = { version = ">=2.0.0,<2.1.0", default-features = false }
+i_overlay = { version = "4.0.2", default-features = false }
 itertools = "0.14.0"
 log = "0.4.27"
 osm-reader = { git = "https://github.com/a-b-street/osm-reader", features = ["serde"] }
@@ -28,3 +28,6 @@ web-sys = { version = "0.3.77", features = ["console"] }
 # use dev profile and avoid wasm-opt.
 [profile.dev.package."*"]
 opt-level = 3
+
+[patch.crates-io]
+geo = { git = "https://github.com/dabreegster/geo", branch = "new_ioverlay" }
