@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { tool } from "./";
+  import { tool } from "../";
 
   let tools = [
     ["explore", "Explore the map", "fa-solid fa-up-down-left-right"],
