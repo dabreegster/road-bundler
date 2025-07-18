@@ -39,6 +39,7 @@
   import { PropertiesTable } from "svelte-utils";
   import MapPanel from "./MapPanel.svelte";
   import Faces from "./Faces.svelte";
+  import Intersections from "./Intersections.svelte";
 
   let edges: FeatureCollection<LineString, EdgeProps> = JSON.parse(
     $backend!.getEdges(),
@@ -73,23 +74,6 @@
         $backend!.collapseEdge(f.properties!.edge_id);
       } else if ($tool == "clean") {
         $backend!.removeEdge(f.properties!.edge_id);
-      } else {
-        return;
-      }
-
-      afterMutation(1);
-    } catch (err) {
-      window.alert(
-        `You probably have to refresh the app now; something broke: ${err}`,
-      );
-    }
-  }
-
-  function clickIntersection(e: CustomEvent<LayerClickInfo>) {
-    try {
-      let f = e.detail.features[0];
-      if ($tool == "clean") {
-        $backend!.collapseDegenerateIntersection(f.properties!.intersection_id);
       } else {
         return;
       }
@@ -375,26 +359,7 @@
       </LineLayer>
     </GeoJSON>
 
-    <GeoJSON data={intersections}>
-      <CircleLayer
-        id="intersections"
-        paint={{
-          "circle-color": [
-            "case",
-            ["==", ["get", "provenance"], "Synthetic"],
-            colors.SyntheticIntersection,
-            colors.OsmIntersection,
-          ],
-          "circle-radius": 7,
-          "circle-opacity": $controls.showSimplified ? 1 : 0.5,
-        }}
-        layout={{
-          visibility: $controls.showIntersections ? "visible" : "none",
-        }}
-        hoverCursor={$tool == "clean" ? "pointer" : undefined}
-        on:click={clickIntersection}
-      />
-    </GeoJSON>
+    <Intersections {intersections} {afterMutation} />
 
     <GeoJSON data={allRoadWidths} generateId>
       <LineLayer
