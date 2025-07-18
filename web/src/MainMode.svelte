@@ -14,14 +14,7 @@
     type FaceProps,
   } from "./";
   import { SplitComponent } from "svelte-utils/two_column_layout";
-  import {
-    GeoJSON,
-    LineLayer,
-    hoverStateFilter,
-    CircleLayer,
-    Control,
-    type LayerClickInfo,
-  } from "svelte-maplibre";
+  import { GeoJSON, LineLayer, CircleLayer, Control } from "svelte-maplibre";
   import type {
     LineString,
     Feature,
@@ -36,10 +29,10 @@
     Popup,
     makeRamp,
   } from "svelte-utils/map";
-  import { PropertiesTable } from "svelte-utils";
   import MapPanel from "./MapPanel.svelte";
   import Faces from "./Faces.svelte";
   import Intersections from "./Intersections.svelte";
+  import Edges from "./Edges.svelte";
 
   let edges: FeatureCollection<LineString, EdgeProps> = JSON.parse(
     $backend!.getEdges(),
@@ -56,7 +49,6 @@
   let originalGraph: FeatureCollection = JSON.parse(
     $backend!.getOriginalOsmGraph(),
   );
-  let originalEdges = getOriginalEdges();
 
   let allRoadWidths: FeatureCollection = emptyGeojson();
 
@@ -64,27 +56,7 @@
 
   let hoveredFace: Feature<Polygon, FaceProps> | null = null;
   let debuggedFace = emptyGeojson();
-
-  let tmpHoveredEdge: Feature | null = null;
-
-  function clickEdge(e: CustomEvent<LayerClickInfo>) {
-    try {
-      let f = e.detail.features[0];
-      if ($tool == "dogleg") {
-        $backend!.collapseEdge(f.properties!.edge_id);
-      } else if ($tool == "clean") {
-        $backend!.removeEdge(f.properties!.edge_id);
-      } else {
-        return;
-      }
-
-      afterMutation(1);
-    } catch (err) {
-      window.alert(
-        `You probably have to refresh the app now; something broke: ${err}`,
-      );
-    }
-  }
+  let debuggedEdge = emptyGeojson();
 
   function undo() {
     try {
@@ -126,50 +98,6 @@
     if (e.key == "s") {
       $controls.showSimplified = !$controls.showSimplified;
     }
-  }
-
-  function debugEdge(
-    tmpHoveredEdge: Feature | null,
-    tool: string,
-  ): FeatureCollection {
-    if (!tmpHoveredEdge || tool != "width") {
-      return emptyGeojson();
-    }
-    return JSON.parse(
-      $backend!.debugRoadWidth(tmpHoveredEdge.properties!.edge_id),
-    );
-  }
-  $: debuggedEdge = debugEdge(tmpHoveredEdge, $tool);
-
-  function getOriginalEdges(): Record<number, Feature> {
-    let edges: Record<number, Feature> = {};
-    for (let f of originalGraph.features) {
-      if (f.geometry.type == "LineString") {
-        edges[f.properties!.edge_id as number] = f;
-      }
-    }
-    return edges;
-  }
-
-  function debugAssociatedEdges(
-    tmpHoveredEdge: Feature | null,
-  ): FeatureCollection {
-    let gj: FeatureCollection = {
-      type: "FeatureCollection" as const,
-      features: [],
-    };
-    if (tmpHoveredEdge && $tool != "width") {
-      for (let e of JSON.parse(
-        tmpHoveredEdge.properties!.associated_original_edges,
-      )) {
-        let edge = originalEdges[e];
-        // TODO We're not being careful to preserve original edges only
-        if (edge) {
-          gj.features.push(edge);
-        }
-      }
-    }
-    return gj;
   }
 
   function getAllRoadWidths() {
@@ -276,6 +204,10 @@
 
     <Faces {faces} bind:hoveredFace bind:debuggedFace {afterMutation} />
 
+    <Edges {edges} {afterMutation} {originalGraph} bind:debuggedEdge />
+
+    <Intersections {intersections} {afterMutation} />
+
     <GeoJSON data={buildings}>
       <CircleLayer
         id="buildings"
@@ -286,80 +218,6 @@
         layout={{ visibility: $controls.showBuildings ? "visible" : "none" }}
       />
     </GeoJSON>
-
-    <GeoJSON data={edges} generateId>
-      <LineLayer
-        id="edges"
-        beforeId="Road labels"
-        manageHoverState
-        bind:hovered={tmpHoveredEdge}
-        eventsIfTopMost
-        paint={{
-          "line-width": [
-            "case",
-            ["==", 0, ["length", ["get", "associated_original_edges"]]],
-            hoverStateFilter(5, 8),
-            hoverStateFilter(7, 10),
-          ],
-          "line-color": [
-            "case",
-            ["==", ["get", "provenance"], "Synthetic"],
-            colors.SyntheticEdge,
-            ["get", "is_road"],
-            colors.OsmRoadEdge,
-            colors.OsmSidepathEdge,
-          ],
-          "line-opacity": $controls.showSimplified ? 1 : 0.5,
-        }}
-        layout={{ visibility: $controls.showEdges ? "visible" : "none" }}
-        hoverCursor="pointer"
-        on:click={clickEdge}
-      >
-        <Popup
-          openOn={$tool == "dogleg" || $tool == "clean" ? "hover" : "click"}
-          let:props
-        >
-          {#if props.provenance == "Synthetic"}
-            <h4>Edge {props.edge_id}, synthetic</h4>
-          {:else}
-            {@const x = JSON.parse(props.provenance)}
-            <h4>
-              Edge {props.edge_id},
-              <a
-                href={`https://www.openstreetmap.org/way/${x.OSM.way}`}
-                target="_blank"
-              >
-                Way {x.OSM.way}
-              </a>
-            </h4>
-          {/if}
-
-          <p>
-            Original edges: {JSON.parse(props.associated_original_edges).join(
-              ", ",
-            )}
-          </p>
-          <p>Length {props.length}m</p>
-          <p>
-            Bearing {props.bearing}
-            <span
-              style:display="inline-block"
-              style:rotate={`${props.bearing}deg`}
-            >
-              ⬆
-            </span>
-          </p>
-
-          {#if props.provenance != "Synthetic"}
-            <PropertiesTable
-              properties={JSON.parse(props.provenance).OSM.tags}
-            />
-          {/if}
-        </Popup>
-      </LineLayer>
-    </GeoJSON>
-
-    <Intersections {intersections} {afterMutation} />
 
     <GeoJSON data={allRoadWidths} generateId>
       <LineLayer
@@ -409,18 +267,6 @@
         />
       </GeoJSON>
     {/if}
-
-    <GeoJSON data={debugAssociatedEdges(tmpHoveredEdge)}>
-      <LineLayer
-        id="debug-original-edges"
-        beforeId="Road labels"
-        paint={{
-          "line-width": 5,
-          "line-color": colors.OsmRoadEdge,
-          "line-dasharray": [2, 2],
-        }}
-      />
-    </GeoJSON>
 
     <DebuggerLayer name="face" data={debuggedFace} />
     <DebuggerLayer name="edge" data={debuggedEdge} />
