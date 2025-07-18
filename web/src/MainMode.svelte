@@ -19,11 +19,9 @@
     LineLayer,
     hoverStateFilter,
     CircleLayer,
-    FillLayer,
     Control,
     type LayerClickInfo,
   } from "svelte-maplibre";
-  import type { ExpressionSpecification } from "maplibre-gl";
   import type {
     LineString,
     Feature,
@@ -40,6 +38,7 @@
   } from "svelte-utils/map";
   import { PropertiesTable } from "svelte-utils";
   import MapPanel from "./MapPanel.svelte";
+  import Faces from "./Faces.svelte";
 
   let edges: FeatureCollection<LineString, EdgeProps> = JSON.parse(
     $backend!.getEdges(),
@@ -62,37 +61,10 @@
 
   let undoCount = 0;
 
-  let tmpHoveredFace: Feature | null = null;
-  // Maplibre breaks nested properties
-  $: hoveredFace = tmpHoveredFace
-    ? faces.features[tmpHoveredFace.id! as number]
-    : (null as Feature<Polygon, FaceProps> | null);
+  let hoveredFace: Feature<Polygon, FaceProps> | null = null;
+  let debuggedFace = emptyGeojson();
 
   let tmpHoveredEdge: Feature | null = null;
-
-  function clickFace(e: CustomEvent<LayerClickInfo>) {
-    try {
-      let f = e.detail.features[0];
-      if ($tool == "collapseToCentroid") {
-        $backend!.collapseToCentroid(f.properties!.face_id);
-      } else if ($tool == "dualCarriageway") {
-        if (!f.properties!.dual_carriageway.startsWith("{")) {
-          window.alert("This isn't a dual carriageway face");
-          return;
-        }
-        $backend!.collapseDualCarriageway(f.properties!.face_id);
-      } else {
-        return;
-      }
-
-      afterMutation();
-      undoCount = undoCount + 1;
-    } catch (err) {
-      window.alert(
-        `You probably have to refresh the app now; something broke: ${err}`,
-      );
-    }
-  }
 
   function clickEdge(e: CustomEvent<LayerClickInfo>) {
     try {
@@ -105,8 +77,7 @@
         return;
       }
 
-      afterMutation();
-      undoCount = undoCount + 1;
+      afterMutation(1);
     } catch (err) {
       window.alert(
         `You probably have to refresh the app now; something broke: ${err}`,
@@ -123,8 +94,7 @@
         return;
       }
 
-      afterMutation();
-      undoCount = undoCount + 1;
+      afterMutation(1);
     } catch (err) {
       window.alert(
         `You probably have to refresh the app now; something broke: ${err}`,
@@ -136,8 +106,7 @@
     try {
       $backend!.undo();
 
-      afterMutation();
-      undoCount = undoCount - 1;
+      afterMutation(-1);
     } catch (err) {
       window.alert(
         `You probably have to refresh the app now; something broke: ${err}`,
@@ -148,8 +117,7 @@
   function doBulkEdit(cb: (b: RoadBundler) => number) {
     try {
       let newCommands = cb($backend!);
-      afterMutation();
-      undoCount = undoCount + newCommands;
+      afterMutation(newCommands);
     } catch (err) {
       window.alert(
         `You probably have to refresh the app now; something broke: ${err}`,
@@ -157,11 +125,12 @@
     }
   }
 
-  function afterMutation() {
+  function afterMutation(undoDiff: number) {
     edges = JSON.parse($backend!.getEdges());
     intersections = JSON.parse($backend!.getIntersections());
     faces = JSON.parse($backend!.getFaces());
     hoveredFace = null;
+    undoCount += undoDiff;
   }
 
   function keyDown(e: KeyboardEvent) {
@@ -174,33 +143,6 @@
       $controls.showSimplified = !$controls.showSimplified;
     }
   }
-
-  function debugFace(
-    hoveredFace: Feature<Polygon, FaceProps> | null,
-    tool: string,
-  ): FeatureCollection {
-    if (!hoveredFace) {
-      return emptyGeojson();
-    }
-
-    if (tool == "explore" || tool == "collapseToCentroid") {
-      return hoveredFace.properties.debug_hover;
-    }
-
-    if (
-      tool == "dualCarriageway" &&
-      typeof hoveredFace.properties.dual_carriageway != "string"
-    ) {
-      return hoveredFace.properties.dual_carriageway.debug_hover;
-    } else if (
-      tool == "sidepath" &&
-      typeof hoveredFace.properties.sidepath != "string"
-    ) {
-      return hoveredFace.properties.sidepath;
-    }
-    return emptyGeojson();
-  }
-  $: debuggedFace = debugFace(hoveredFace, $tool);
 
   function debugEdge(
     tmpHoveredEdge: Feature | null,
@@ -259,20 +201,6 @@
       );
     });
   }
-
-  // TS fail
-  $: faceFillColor = [
-    "case",
-    ["==", ["get", "kind"], "UrbanBlock"],
-    colors.UrbanBlock,
-    ["==", ["get", "kind"], "SidepathArtifact"],
-    colors.SidepathArtifact,
-    ["==", ["get", "kind"], "OtherArea"],
-    colors.OtherArea,
-    ["!=", ["typeof", ["get", "dual_carriageway"]], "string"],
-    $tool == "dualCarriageway" ? colors.DualCarriageway : colors.RoadArtifact,
-    colors.RoadArtifact,
-  ] as unknown as ExpressionSpecification;
 </script>
 
 <svelte:window on:keydown={keyDown} />
@@ -362,26 +290,7 @@
       <MapPanel {debuggedFace} {debuggedEdge} />
     </Control>
 
-    <GeoJSON data={faces} generateId>
-      <FillLayer
-        id="faces"
-        beforeId="Road labels"
-        manageHoverState
-        filter={$controls.showUrbanBlocks
-          ? undefined
-          : ["!=", ["get", "kind"], "UrbanBlock"]}
-        paint={{
-          "fill-color": faceFillColor,
-          "fill-opacity": hoverStateFilter(0.2, 1),
-        }}
-        layout={{ visibility: $controls.showFaces ? "visible" : "none" }}
-        bind:hovered={tmpHoveredFace}
-        hoverCursor={["collapseToCentroid", "dualCarriageway"].includes($tool)
-          ? "pointer"
-          : undefined}
-        on:click={clickFace}
-      />
-    </GeoJSON>
+    <Faces {faces} bind:hoveredFace bind:debuggedFace {afterMutation} />
 
     <GeoJSON data={buildings}>
       <CircleLayer
