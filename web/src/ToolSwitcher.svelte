@@ -1,9 +1,7 @@
 <script lang="ts">
-  import type { Tool } from "./";
+  import { tool } from "./";
 
-  export let tool: Tool;
-
-  let tools: [Tool, string, string][] = [
+  let tools = [
     ["explore", "Explore the map", "fa-solid fa-up-down-left-right"],
     ["collapseToCentroid", "Roundabouts", "fa-regular fa-circle"],
     ["dualCarriageway", "Dual carriageways", "fa-solid fa-grip-lines-vertical"],
@@ -11,23 +9,23 @@
     ["dogleg", "Dog-leg", "fa-solid fa-dog"],
     ["clean", "Cleanup", "fa-solid fa-broom"],
     ["width", "Road width", "fa-solid fa-ruler-horizontal"],
-  ];
+  ] as const;
 
   function keyDown(e: KeyboardEvent) {
     if (e.key == "1") {
-      tool = "explore";
+      $tool = "explore";
     } else if (e.key == "2") {
-      tool = "collapseToCentroid";
+      $tool = "collapseToCentroid";
     } else if (e.key == "3") {
-      tool = "dualCarriageway";
+      $tool = "dualCarriageway";
     } else if (e.key == "4") {
-      tool = "sidepath";
+      $tool = "sidepath";
     } else if (e.key == "5") {
-      tool = "dogleg";
+      $tool = "dogleg";
     } else if (e.key == "6") {
-      tool = "clean";
+      $tool = "clean";
     } else if (e.key == "7") {
-      tool = "width";
+      $tool = "width";
     }
   }
 </script>
@@ -37,8 +35,8 @@
 <div>
   {#each tools as [value, label, icon]}
     <button
-      on:click={() => (tool = value)}
-      disabled={tool == value}
+      on:click={() => ($tool = value)}
+      disabled={$tool == value}
       title={label}
     >
       <i class={icon}></i>

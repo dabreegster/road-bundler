@@ -1,9 +1,18 @@
 <script lang="ts">
   import { RoadBundler } from "backend";
   import DebuggerLayer from "./DebuggerLayer.svelte";
-  import DebuggerLegend from "./DebuggerLegend.svelte";
   import ToolSwitcher from "./ToolSwitcher.svelte";
-  import { colors, backend, type Tool } from "./";
+  import {
+    widthColorScale,
+    widthLimits,
+    controls,
+    tool,
+    colors,
+    backend,
+    type IntersectionProps,
+    type EdgeProps,
+    type FaceProps,
+  } from "./";
   import { SplitComponent } from "svelte-utils/two_column_layout";
   import {
     GeoJSON,
@@ -29,48 +38,8 @@
     Popup,
     makeRamp,
   } from "svelte-utils/map";
-  import {
-    PropertiesTable,
-    QualitativeLegend,
-    SequentialLegend,
-  } from "svelte-utils";
-
-  interface FaceProps {
-    face_id: number;
-    debug_hover: FeatureCollection;
-    kind: "UrbanBlock" | "RoadArtifact" | "SidepathArtifact" | "OtherArea";
-
-    dual_carriageway:
-      | {
-          name: string;
-          debug_hover: FeatureCollection;
-        }
-      | string;
-    sidepath: FeatureCollection | string;
-  }
-
-  interface EdgeProps {
-    edge_id: number;
-    provenance:
-      | {
-          OSM: {
-            way: number;
-            node1: number;
-            node2: number;
-            tags: Record<string, string>;
-          };
-        }
-      | "Synthetic";
-    is_road: boolean;
-    length: number;
-    bearing: number;
-    associated_original_edges: number[];
-  }
-
-  interface IntersectionProps {
-    intersection_id: number;
-    provenance: { OSM: number } | "Synthetic";
-  }
+  import { PropertiesTable } from "svelte-utils";
+  import MapPanel from "./MapPanel.svelte";
 
   let edges: FeatureCollection<LineString, EdgeProps> = JSON.parse(
     $backend!.getEdges(),
@@ -90,19 +59,8 @@
   let originalEdges = getOriginalEdges();
 
   let allRoadWidths: FeatureCollection = emptyGeojson();
-  // TODO Narrowest is barely visible
-  let widthColorScale = ["#f1eef6", "#d7b5d8", "#df65b0", "#dd1c77", "#980043"];
-  let widthLimits = [0, 10, 20, 30, 40, 100];
 
-  let tool: Tool = "explore";
   let undoCount = 0;
-
-  let showFaces = true;
-  let showUrbanBlocks = false;
-  let showEdges = true;
-  let showIntersections = false;
-  let showBuildings = false;
-  let showSimplified = true;
 
   let tmpHoveredFace: Feature | null = null;
   // Maplibre breaks nested properties
@@ -115,9 +73,9 @@
   function clickFace(e: CustomEvent<LayerClickInfo>) {
     try {
       let f = e.detail.features[0];
-      if (tool == "collapseToCentroid") {
+      if ($tool == "collapseToCentroid") {
         $backend!.collapseToCentroid(f.properties!.face_id);
-      } else if (tool == "dualCarriageway") {
+      } else if ($tool == "dualCarriageway") {
         if (!f.properties!.dual_carriageway.startsWith("{")) {
           window.alert("This isn't a dual carriageway face");
           return;
@@ -139,9 +97,9 @@
   function clickEdge(e: CustomEvent<LayerClickInfo>) {
     try {
       let f = e.detail.features[0];
-      if (tool == "dogleg") {
+      if ($tool == "dogleg") {
         $backend!.collapseEdge(f.properties!.edge_id);
-      } else if (tool == "clean") {
+      } else if ($tool == "clean") {
         $backend!.removeEdge(f.properties!.edge_id);
       } else {
         return;
@@ -159,7 +117,7 @@
   function clickIntersection(e: CustomEvent<LayerClickInfo>) {
     try {
       let f = e.detail.features[0];
-      if (tool == "clean") {
+      if ($tool == "clean") {
         $backend!.collapseDegenerateIntersection(f.properties!.intersection_id);
       } else {
         return;
@@ -213,7 +171,7 @@
     }
 
     if (e.key == "s") {
-      showSimplified = !showSimplified;
+      $controls.showSimplified = !$controls.showSimplified;
     }
   }
 
@@ -242,7 +200,7 @@
     }
     return emptyGeojson();
   }
-  $: debuggedFace = debugFace(hoveredFace, tool);
+  $: debuggedFace = debugFace(hoveredFace, $tool);
 
   function debugEdge(
     tmpHoveredEdge: Feature | null,
@@ -255,7 +213,7 @@
       $backend!.debugRoadWidth(tmpHoveredEdge.properties!.edge_id),
     );
   }
-  $: debuggedEdge = debugEdge(tmpHoveredEdge, tool);
+  $: debuggedEdge = debugEdge(tmpHoveredEdge, $tool);
 
   function getOriginalEdges(): Record<number, Feature> {
     let edges: Record<number, Feature> = {};
@@ -274,7 +232,7 @@
       type: "FeatureCollection" as const,
       features: [],
     };
-    if (tmpHoveredEdge && tool != "width") {
+    if (tmpHoveredEdge && $tool != "width") {
       for (let e of JSON.parse(
         tmpHoveredEdge.properties!.associated_original_edges,
       )) {
@@ -312,7 +270,7 @@
     ["==", ["get", "kind"], "OtherArea"],
     colors.OtherArea,
     ["!=", ["typeof", ["get", "dual_carriageway"]], "string"],
-    tool == "dualCarriageway" ? colors.DualCarriageway : colors.RoadArtifact,
+    $tool == "dualCarriageway" ? colors.DualCarriageway : colors.RoadArtifact,
     colors.RoadArtifact,
   ] as unknown as ExpressionSpecification;
 </script>
@@ -328,16 +286,16 @@
     </div>
     <br />
 
-    <ToolSwitcher bind:tool />
+    <ToolSwitcher />
 
-    {#if tool == "explore"}
+    {#if $tool == "explore"}
       <p>Just pan around the map</p>
       <button class="outline" on:click={doAllSimplifications}>
         Do all simplifications
       </button>
-    {:else if tool == "collapseToCentroid"}
+    {:else if $tool == "collapseToCentroid"}
       <p>Click to collapse a face to its centroid</p>
-    {:else if tool == "dualCarriageway"}
+    {:else if $tool == "dualCarriageway"}
       <p>Click to collapse a dual carriageway</p>
 
       <button
@@ -357,14 +315,14 @@
           <p>{dc.name}</p>
         {/if}
       {/if}
-    {:else if tool == "sidepath"}
+    {:else if $tool == "sidepath"}
       <button
         class="outline"
         on:click={() => doBulkEdit((b) => b.removeAllSidepaths())}
       >
         Remove all sidepaths
       </button>
-    {:else if tool == "dogleg"}
+    {:else if $tool == "dogleg"}
       <p>Click a dog-leg edge to collapse it</p>
 
       <button
@@ -373,7 +331,7 @@
       >
         Collapse all dog-leg intersections
       </button>
-    {:else if tool == "clean"}
+    {:else if $tool == "clean"}
       <p>Click an edge or degenerate intersection to collapse it</p>
 
       <button
@@ -390,7 +348,7 @@
       >
         Collapse all degenerate intersections
       </button>
-    {:else if tool == "width"}
+    {:else if $tool == "width"}
       <p>Hover on an edge to measure its width</p>
 
       <button class="outline" on:click={getAllRoadWidths}>
@@ -401,86 +359,7 @@
 
   <div slot="map">
     <Control position="top-right">
-      <div class="map-panel">
-        <details open>
-          <summary>Layers</summary>
-          <label>
-            <u>S</u>
-            how original OSM
-            <input
-              type="checkbox"
-              role="switch"
-              bind:checked={showSimplified}
-            />
-            <u>S</u>
-            how simplified graph
-          </label>
-
-          <br />
-
-          <label>
-            <input type="checkbox" bind:checked={showEdges} />
-            Show edges
-          </label>
-
-          <label>
-            <input type="checkbox" bind:checked={showIntersections} />
-            Show intersections
-          </label>
-
-          <label>
-            <input type="checkbox" bind:checked={showBuildings} />
-            Show building centroids
-          </label>
-
-          <hr />
-
-          <QualitativeLegend
-            labelColors={{
-              "urban block": colors.UrbanBlock,
-              "road artifact": colors.RoadArtifact,
-              "sidepath artifact": colors.SidepathArtifact,
-              "other area": colors.OtherArea,
-            }}
-            itemsPerRow={3}
-          />
-
-          <label>
-            <input type="checkbox" bind:checked={showFaces} />
-            Show faces
-          </label>
-
-          <label>
-            <input type="checkbox" bind:checked={showUrbanBlocks} />
-            Show urban blocks
-          </label>
-
-          <hr />
-
-          <QualitativeLegend
-            labelColors={{
-              "OSM road edge": colors.OsmRoadEdge,
-              "OSM sidewalk/cycleway edge": colors.OsmSidepathEdge,
-              "OSM intersection": colors.OsmIntersection,
-              "synthetic edge": colors.SyntheticEdge,
-              "synthetic intersection": colors.SyntheticIntersection,
-            }}
-            itemsPerRow={1}
-          />
-
-          <hr />
-
-          {#if tool == "width"}
-            <SequentialLegend
-              colorScale={widthColorScale}
-              labels={{ limits: widthLimits }}
-            />
-          {/if}
-
-          <DebuggerLegend data={debuggedFace} />
-          <DebuggerLegend data={debuggedEdge} />
-        </details>
-      </div>
+      <MapPanel {debuggedFace} {debuggedEdge} />
     </Control>
 
     <GeoJSON data={faces} generateId>
@@ -488,16 +367,16 @@
         id="faces"
         beforeId="Road labels"
         manageHoverState
-        filter={showUrbanBlocks
+        filter={$controls.showUrbanBlocks
           ? undefined
           : ["!=", ["get", "kind"], "UrbanBlock"]}
         paint={{
           "fill-color": faceFillColor,
           "fill-opacity": hoverStateFilter(0.2, 1),
         }}
-        layout={{ visibility: showFaces ? "visible" : "none" }}
+        layout={{ visibility: $controls.showFaces ? "visible" : "none" }}
         bind:hovered={tmpHoveredFace}
-        hoverCursor={["collapseToCentroid", "dualCarriageway"].includes(tool)
+        hoverCursor={["collapseToCentroid", "dualCarriageway"].includes($tool)
           ? "pointer"
           : undefined}
         on:click={clickFace}
@@ -511,7 +390,7 @@
           "circle-color": colors.BuildingCentroid,
           "circle-radius": 3,
         }}
-        layout={{ visibility: showBuildings ? "visible" : "none" }}
+        layout={{ visibility: $controls.showBuildings ? "visible" : "none" }}
       />
     </GeoJSON>
 
@@ -537,14 +416,14 @@
             colors.OsmRoadEdge,
             colors.OsmSidepathEdge,
           ],
-          "line-opacity": showSimplified ? 1 : 0.5,
+          "line-opacity": $controls.showSimplified ? 1 : 0.5,
         }}
-        layout={{ visibility: showEdges ? "visible" : "none" }}
+        layout={{ visibility: $controls.showEdges ? "visible" : "none" }}
         hoverCursor="pointer"
         on:click={clickEdge}
       >
         <Popup
-          openOn={tool == "dogleg" || tool == "clean" ? "hover" : "click"}
+          openOn={$tool == "dogleg" || $tool == "clean" ? "hover" : "click"}
           let:props
         >
           {#if props.provenance == "Synthetic"}
@@ -598,10 +477,12 @@
             colors.OsmIntersection,
           ],
           "circle-radius": 7,
-          "circle-opacity": showSimplified ? 1 : 0.5,
+          "circle-opacity": $controls.showSimplified ? 1 : 0.5,
         }}
-        layout={{ visibility: showIntersections ? "visible" : "none" }}
-        hoverCursor={tool == "clean" ? "pointer" : undefined}
+        layout={{
+          visibility: $controls.showIntersections ? "visible" : "none",
+        }}
+        hoverCursor={$tool == "clean" ? "pointer" : undefined}
         on:click={clickIntersection}
       />
     </GeoJSON>
@@ -618,7 +499,7 @@
             widthColorScale,
           ),
         }}
-        layout={{ visibility: tool == "width" ? "visible" : "none" }}
+        layout={{ visibility: $tool == "width" ? "visible" : "none" }}
       >
         <Popup openOn="hover" let:props>
           {Math.round(props.min_width)} to {Math.round(props.max_width)}
@@ -636,7 +517,9 @@
             "line-width": 5,
             "line-color": colors.OsmRoadEdge,
           }}
-          layout={{ visibility: !showSimplified ? "visible" : "none" }}
+          layout={{
+            visibility: !$controls.showSimplified ? "visible" : "none",
+          }}
         />
 
         <CircleLayer
@@ -646,7 +529,9 @@
             "circle-color": colors.OsmIntersection,
             "circle-radius": 7,
           }}
-          layout={{ visibility: !showSimplified ? "visible" : "none" }}
+          layout={{
+            visibility: !$controls.showSimplified ? "visible" : "none",
+          }}
         />
       </GeoJSON>
     {/if}
@@ -667,10 +552,3 @@
     <DebuggerLayer name="edge" data={debuggedEdge} />
   </div>
 </SplitComponent>
-
-<style>
-  .map-panel {
-    background: white;
-    padding: 16px;
-  }
-</style>
