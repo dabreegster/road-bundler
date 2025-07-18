@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { colors, controls, tool, backend, type IntersectionProps } from "./";
+  import { colors, controls, tool, backend, type IntersectionProps } from "../";
   import { GeoJSON, CircleLayer, type LayerClickInfo } from "svelte-maplibre";
   import type { FeatureCollection, Point } from "geojson";
 

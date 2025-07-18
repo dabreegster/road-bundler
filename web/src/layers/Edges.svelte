@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { colors, controls, tool, backend, type EdgeProps } from "./";
+  import { colors, controls, tool, backend, type EdgeProps } from "../";
   import {
     hoverStateFilter,
     GeoJSON,

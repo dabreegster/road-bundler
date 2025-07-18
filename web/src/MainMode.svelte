@@ -30,9 +30,9 @@
     makeRamp,
   } from "svelte-utils/map";
   import MapPanel from "./MapPanel.svelte";
-  import Faces from "./Faces.svelte";
-  import Intersections from "./Intersections.svelte";
-  import Edges from "./Edges.svelte";
+  import Faces from "./layers/Faces.svelte";
+  import Intersections from "./layers/Intersections.svelte";
+  import Edges from "./layers/Edges.svelte";
 
   let edges: FeatureCollection<LineString, EdgeProps> = JSON.parse(
     $backend!.getEdges(),

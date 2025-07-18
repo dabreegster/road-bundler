@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Feature, FeatureCollection, Polygon } from "geojson";
-  import { backend, colors, controls, tool, type FaceProps } from "./";
+  import { backend, colors, controls, tool, type FaceProps } from "../";
   import {
     GeoJSON,
     FillLayer,
