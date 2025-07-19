@@ -16,7 +16,7 @@
   import type { Feature, FeatureCollection, LineString } from "geojson";
   import { Popup } from "svelte-utils/map";
   import { PropertiesTable } from "svelte-utils";
-  import { emptyGeojson } from "svelte-utils/map";
+  import { constructMatchExpression, emptyGeojson } from "svelte-utils/map";
 
   export let edges: FeatureCollection<LineString, EdgeProps>;
   export let afterMutation: (undoDiff: number) => void;
@@ -106,14 +106,11 @@
         hoverStateFilter(5, 8),
         hoverStateFilter(7, 10),
       ],
-      "line-color": [
-        "case",
-        ["==", ["get", "provenance"], "Synthetic"],
-        colors.SyntheticEdge,
-        ["get", "is_road"],
-        colors.OsmRoadEdge,
-        colors.OsmSidepathEdge,
-      ],
+      "line-color": constructMatchExpression(
+        ["get", "simple_kind"],
+        colors.edges,
+        "red",
+      ),
       "line-opacity": $controls.showSimplified ? 1 : 0.5,
     }}
     layout={{ visibility: $controls.showEdges ? "visible" : "none" }}
@@ -179,7 +176,11 @@
     beforeId="Road labels"
     paint={{
       "line-width": 5,
-      "line-color": colors.OsmRoadEdge,
+      "line-color": constructMatchExpression(
+        ["get", "simple_kind"],
+        colors.edges,
+        "red",
+      ),
       "line-dasharray": [2, 2],
     }}
   />

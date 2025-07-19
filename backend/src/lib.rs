@@ -80,6 +80,7 @@ impl RoadBundler {
             let mut f = self.graph.mercator.to_wgs84_gj(&edge.linestring);
             f.set_property("edge_id", id.0);
             f.set_property("kind", serde_json::to_value(&edge.kind).map_err(err_to_js)?);
+            f.set_property("simple_kind", edge.kind.to_simple());
             f.set_property(
                 "provenance",
                 serde_json::to_value(&edge.provenance).map_err(err_to_js)?,
@@ -126,6 +127,7 @@ impl RoadBundler {
         for (id, edge) in &self.original_graph.edges {
             let mut f = self.graph.mercator.to_wgs84_gj(&edge.linestring);
             f.set_property("edge_id", id.0);
+            f.set_property("simple_kind", edge.kind.to_simple());
             features.push(f);
         }
         for (_, i) in &self.original_graph.intersections {

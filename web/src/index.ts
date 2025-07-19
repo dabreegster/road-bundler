@@ -46,6 +46,12 @@ export interface FaceProps {
 
 export interface EdgeProps {
   edge_id: number;
+  simple_kind:
+    | "road"
+    | "service road"
+    | "sidepath"
+    | "connector"
+    | "nonmotorized";
   kind:
     | {
         Nonmotorized: number[];
@@ -89,10 +95,15 @@ export let colors = {
   RoadArtifact: "cyan",
   OtherArea: "green",
 
-  OsmRoadEdge: "black",
-  OsmSidepathEdge: "grey",
+  edges: {
+    road: "black",
+    "service road": "grey",
+    sidepath: "green",
+    connector: "#80EF80",
+    nonmotorized: "orange",
+  },
+
   OsmIntersection: "green",
-  SyntheticEdge: "orange",
   SyntheticIntersection: "pink",
 
   BuildingCentroid: "black",

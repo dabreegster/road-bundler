@@ -66,10 +66,8 @@
 
     <QualitativeLegend
       labelColors={{
-        "OSM road edge": colors.OsmRoadEdge,
-        "OSM sidewalk/cycleway edge": colors.OsmSidepathEdge,
+        ...colors.edges,
         "OSM intersection": colors.OsmIntersection,
-        "synthetic edge": colors.SyntheticEdge,
         "synthetic intersection": colors.SyntheticIntersection,
       }}
       itemsPerRow={1}

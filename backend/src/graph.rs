@@ -381,4 +381,28 @@ impl EdgeKind {
             _ => None,
         }
     }
+
+    pub fn to_simple(&self) -> &'static str {
+        match self {
+            Self::Motorized {
+                roads,
+                service_roads,
+                sidepaths,
+                ..
+            } => {
+                if !roads.is_empty() {
+                    return "road";
+                }
+                if !service_roads.is_empty() {
+                    return "service road";
+                }
+                if !sidepaths.is_empty() {
+                    return "sidepath";
+                }
+                // TODO Normally one should be non-empty, but use this as a fallback for now
+                "connector"
+            }
+            Self::Nonmotorized(_) => "nonmotorized",
+        }
+    }
 }

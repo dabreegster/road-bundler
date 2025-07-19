@@ -28,6 +28,7 @@
     emptyGeojson,
     Popup,
     makeRamp,
+    constructMatchExpression,
   } from "svelte-utils/map";
   import MapPanel from "./MapPanel.svelte";
   import Faces from "./layers/Faces.svelte";
@@ -122,7 +123,11 @@
           filter={isLine}
           paint={{
             "line-width": 5,
-            "line-color": colors.OsmRoadEdge,
+            "line-color": constructMatchExpression(
+              ["get", "simple_kind"],
+              colors.edges,
+              "red",
+            ),
           }}
           layout={{
             visibility: !$controls.showSimplified ? "visible" : "none",
