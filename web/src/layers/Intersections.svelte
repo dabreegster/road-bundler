@@ -28,12 +28,7 @@
   <CircleLayer
     id="intersections"
     paint={{
-      "circle-color": [
-        "case",
-        ["==", ["get", "provenance"], "Synthetic"],
-        colors.SyntheticIntersection,
-        colors.OsmIntersection,
-      ],
+      "circle-color": colors.Intersection,
       "circle-radius": 7,
       "circle-opacity": $controls.showSimplified ? 1 : 0.5,
     }}

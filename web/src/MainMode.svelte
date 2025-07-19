@@ -138,7 +138,7 @@
           id="original-intersections"
           filter={isPoint}
           paint={{
-            "circle-color": colors.OsmIntersection,
+            "circle-color": colors.Intersection,
             "circle-radius": 7,
           }}
           layout={{

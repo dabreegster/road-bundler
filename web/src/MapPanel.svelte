@@ -67,8 +67,7 @@
     <QualitativeLegend
       labelColors={{
         ...colors.edges,
-        "OSM intersection": colors.OsmIntersection,
-        "synthetic intersection": colors.SyntheticIntersection,
+        Intersection: colors.Intersection,
       }}
       itemsPerRow={1}
     />

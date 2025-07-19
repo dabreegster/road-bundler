@@ -73,7 +73,6 @@ export interface EdgeProps {
         };
       }
     | "Synthetic";
-  is_road: boolean;
   length: number;
   bearing: number;
   associated_original_edges: number[];
@@ -103,8 +102,7 @@ export let colors = {
     nonmotorized: "orange",
   },
 
-  OsmIntersection: "green",
-  SyntheticIntersection: "pink",
+  Intersection: "purple",
 
   BuildingCentroid: "black",
 };

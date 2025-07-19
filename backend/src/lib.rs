@@ -85,7 +85,6 @@ impl RoadBundler {
                 "provenance",
                 serde_json::to_value(&edge.provenance).map_err(err_to_js)?,
             );
-            f.set_property("is_road", !edge.is_sidewalk_or_cycleway(&self.graph));
             f.set_property("length", Euclidean.length(&edge.linestring).round());
             f.set_property(
                 "bearing",
