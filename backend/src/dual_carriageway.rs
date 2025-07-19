@@ -274,8 +274,7 @@ fn create_new_linked_edges(
     // TODO Wrong, we need to merge to preserve sidepath relationships and stuff. And not have one
     // for the entire DC.
     let kind = EdgeKind::Motorized {
-        // TODO Even assuming these're all roads is wrong
-        roads: associated_original_edges.clone(),
+        roads: Vec::new(),
         service_roads: Vec::new(),
         sidepaths: Vec::new(),
         connectors: Vec::new(),

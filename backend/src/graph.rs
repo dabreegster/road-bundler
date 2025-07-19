@@ -22,6 +22,8 @@ pub struct Graph {
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord, Serialize)]
 pub struct EdgeID(pub usize);
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord, Serialize)]
+pub struct OriginalEdgeID(pub usize);
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord, Serialize)]
 pub struct IntersectionID(pub usize);
 
 #[derive(Clone)]
@@ -30,11 +32,13 @@ pub struct Edge {
     pub src: IntersectionID,
     pub dst: IntersectionID,
     pub linestring: LineString,
+    // TODO remove
     pub provenance: EdgeProvenance,
     pub kind: EdgeKind,
 
     /// Any edges from the original_graph that've been consolidated into this one. It should maybe
     /// only be defined for synthetic edges, but sidepath matching is still TBD
+    // TODO remove
     pub associated_original_edges: BTreeSet<EdgeID>,
 }
 
@@ -105,26 +109,26 @@ pub enum EdgeProvenance {
     Synthetic,
 }
 
-/// All of the EdgeIDs referenced are edges in the **original** graph.
-/// TODO Strongly consider different types to emphasize that
 #[derive(Clone, Serialize)]
 pub enum EdgeKind {
     Motorized {
-        /// The main driveable roads, possibly in different directions for a dual carriageway
-        roads: Vec<EdgeID>,
+        /// The main driveable roads, possibly in different directions for a dual carriageway.
+        /// Unique per edge.
+        roads: Vec<OriginalEdgeID>,
         /// Smaller service roads associated. Could include a whole sub-network of service roads
         /// nearby, not just little driveways. So two separate Motorized edges might both reference
         /// the same service roads.
-        service_roads: Vec<EdgeID>,
-        /// Footways and cycleways that are parallel to the main driveable road
-        sidepaths: Vec<EdgeID>,
+        service_roads: Vec<OriginalEdgeID>,
+        /// Footways and cycleways that are parallel to the main driveable road. Might match to
+        /// multiple edges.
+        sidepaths: Vec<OriginalEdgeID>,
         /// Footway and cycleway crossings and related pieces that aren't parallel to the main
         /// driveable road
         // TODO and maybe pieces of DCs too?
-        connectors: Vec<EdgeID>,
+        connectors: Vec<OriginalEdgeID>,
     },
     /// Footways and cycleways that're off-road / not parallel to a driveable road
-    Nonmotorized(Vec<EdgeID>),
+    Nonmotorized(Vec<OriginalEdgeID>),
 }
 
 #[derive(Clone)]
@@ -171,7 +175,7 @@ impl Graph {
                                 node2: e.osm_node2,
                             },
                             associated_original_edges: BTreeSet::new(),
-                            kind: EdgeKind::initially_classify(e.id.into(), &e.osm_tags),
+                            kind: EdgeKind::initially_classify(e.id, &e.osm_tags),
                         },
                     )
                 })
@@ -320,7 +324,9 @@ impl From<utils::osm2graph::IntersectionID> for IntersectionID {
 }
 
 impl EdgeKind {
-    fn initially_classify(e: EdgeID, tags: &Tags) -> Self {
+    fn initially_classify(e: utils::osm2graph::EdgeID, tags: &Tags) -> Self {
+        let id = vec![OriginalEdgeID(e.0)];
+
         if tags.is_any(
             "highway",
             vec![
@@ -328,20 +334,20 @@ impl EdgeKind {
             ],
         ) {
             // These might not be off-road, but we don't know yet
-            return Self::Nonmotorized(vec![e]);
+            return Self::Nonmotorized(id);
         }
 
         if tags.is_any("highway", vec!["corridor", "service"]) {
             return Self::Motorized {
                 roads: Vec::new(),
-                service_roads: vec![e],
+                service_roads: id,
                 sidepaths: Vec::new(),
                 connectors: Vec::new(),
             };
         }
 
         Self::Motorized {
-            roads: vec![e],
+            roads: id,
             service_roads: Vec::new(),
             sidepaths: Vec::new(),
             connectors: Vec::new(),
