@@ -15,8 +15,8 @@
   } from "svelte-maplibre";
   import type { Feature, FeatureCollection, LineString } from "geojson";
   import { Popup } from "svelte-utils/map";
-  import { PropertiesTable } from "svelte-utils";
   import { constructMatchExpression, emptyGeojson } from "svelte-utils/map";
+  import ListEdges from "./ListEdges.svelte";
 
   export let edges: FeatureCollection<LineString, EdgeProps>;
   export let afterMutation: (undoDiff: number) => void;
@@ -124,49 +124,35 @@
       {@const kind = JSON.parse(props.kind)}
       {#if kind.Motorized}
         <h4>Edge {props.edge_id}, motorized</h4>
-        <p>Roads: {kind.Motorized.roads.join(", ")}</p>
-        <p>Service roads: {kind.Motorized.service_roads.join(", ")}</p>
-        <p>Sidepaths: {kind.Motorized.sidepaths.join(", ")}</p>
-        <p>Connectors: {kind.Motorized.connectors.join(", ")}</p>
 
-        <!-- TODO nicer scroller -->
-        {#each [...kind.Motorized.roads, ...kind.Motorized.service_roads, ...kind.Motorized.sidepaths, ...kind.Motorized.connectors] as e}
-          {@const orig = originalEdges[e].properties}
-          <details>
-            <summary>Original edge {e}</summary>
-          <a
-            href={`https://www.openstreetmap.org/way/${orig.way}`}
-            target="_blank"
-          >
-            Way {orig.way}
-          </a>
-
-        <PropertiesTable
-          properties={orig.tags}
+        <ListEdges
+          collection="Roads"
+          edges={kind.Motorized.roads}
+          {originalEdges}
         />
-          </details>
-        {/each}
+        <ListEdges
+          collection="Service roads"
+          edges={kind.Motorized.service_roads}
+          {originalEdges}
+        />
+        <ListEdges
+          collection="Sidepaths"
+          edges={kind.Motorized.sidepaths}
+          {originalEdges}
+        />
+        <ListEdges
+          collection="Connectors"
+          edges={kind.Motorized.connectors}
+          {originalEdges}
+        />
       {:else}
         <h4>Edge {props.edge_id}, non-motorized</h4>
-        <p>Pieces: {kind.Nonmotorized.join(", ")}</p>
 
-        <!-- TODO nicer scroller -->
-        {#each kind.Nonmotorized as e }
-          {@const orig = originalEdges[e].properties}
-          <details>
-            <summary>Original edge {e}</summary>
-          <a
-            href={`https://www.openstreetmap.org/way/${orig.way}`}
-            target="_blank"
-          >
-            Way {orig.way}
-          </a>
-
-        <PropertiesTable
-          properties={orig.tags}
+        <ListEdges
+          collection="Pieces"
+          edges={kind.Nonmotorized}
+          {originalEdges}
         />
-          </details>
-        {/each}
       {/if}
 
       <p>Length {props.length}m</p>
