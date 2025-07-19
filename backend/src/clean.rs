@@ -44,6 +44,15 @@ impl RoadBundler {
             return;
         }
 
+        // Can't combine a motorized and nonmotorized edge. Again, maybe weird to silently do
+        // nothing.
+        let Some(kind) = self.graph.edges[&edges[0]]
+            .kind
+            .merge(&self.graph.edges[&edges[1]].kind)
+        else {
+            return;
+        };
+
         let mut edge1 = self.graph.remove_edge(edges[0]);
         let mut edge2 = self.graph.remove_edge(edges[1]);
         self.graph.remove_empty_intersection(id);
@@ -67,7 +76,9 @@ impl RoadBundler {
         };
         pts.extend(edge2.linestring.0);
 
-        let e = self.graph.create_new_edge(LineString::new(pts), i1, i2);
+        let e = self
+            .graph
+            .create_new_edge(LineString::new(pts), i1, i2, kind);
         let new_edge = self.graph.edges.get_mut(&e).unwrap();
         new_edge
             .associated_original_edges

@@ -46,6 +46,18 @@ export interface FaceProps {
 
 export interface EdgeProps {
   edge_id: number;
+  kind:
+    | {
+        Nonmotorized: number[];
+      }
+    | {
+        Motorized: {
+          roads: number[];
+          service_roads: number[];
+          sidepaths: number[];
+          connectors: number[];
+        };
+      };
   provenance:
     | {
         OSM: {

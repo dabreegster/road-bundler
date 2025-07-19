@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use geo::{Distance, Euclidean, LineString};
+use geo::{Distance, Euclidean, LineString, Point};
 use geojson::GeoJson;
 use itertools::Itertools;
 use serde::Serialize;
@@ -7,7 +7,10 @@ use utils::{collapse_degree_2, KeyedLineString};
 
 use crate::geo_helpers::{average_linestrings, linestring_bearing};
 use crate::split_line::Splits;
-use crate::{Debugger, EdgeID, Face, FaceID, FaceKind, Graph, RoadBundler};
+use crate::{
+    Debugger, EdgeID, EdgeKind, Face, FaceID, FaceKind, Graph, Intersection, IntersectionID,
+    IntersectionProvenance, RoadBundler,
+};
 
 // TODO Don't serialize this. Plumb the extra debug info as foreign members?
 #[derive(Serialize)]
@@ -189,7 +192,8 @@ impl RoadBundler {
 
         // Create the new split center-lines, with new intersections
         // TODO Which of the original edges should be associated_original_edges? For now, all
-        let new_intersections = self.graph.create_new_linked_edges(
+        let new_intersections = create_new_linked_edges(
+            &mut self.graph,
             dc.splits.lines,
             dc.splits.new_endpts,
             associated_original_edges,
@@ -221,6 +225,13 @@ impl RoadBundler {
                     ]),
                     existing_i,
                     closest_new_i,
+                    // TODO Can we associate this with any original edges at all?
+                    EdgeKind::Motorized {
+                        roads: Vec::new(),
+                        service_roads: Vec::new(),
+                        sidepaths: Vec::new(),
+                        connectors: Vec::new(),
+                    },
                 );
             }
         }
@@ -232,6 +243,61 @@ impl RoadBundler {
             }
         }
     }
+}
+
+/// Returns the new intersections created
+fn create_new_linked_edges(
+    graph: &mut Graph,
+    linestrings: Vec<LineString>,
+    endpoints: Vec<Point>,
+    associated_original_edges: Vec<EdgeID>,
+) -> Vec<IntersectionID> {
+    // Assumes linestrings all point in the correct way
+    // Assumes endpoints comes from linestring_endpoints (TODO maybe just call it here)
+    assert_eq!(linestrings.len() + 1, endpoints.len());
+
+    let mut new_intersections = Vec::new();
+    for point in endpoints {
+        let id = graph.new_intersection_id();
+        graph.intersections.insert(
+            id,
+            Intersection {
+                id,
+                edges: vec![],
+                point,
+                provenance: IntersectionProvenance::Synthetic,
+            },
+        );
+        new_intersections.push(id);
+    }
+
+    // TODO Wrong, we need to merge to preserve sidepath relationships and stuff. And not have one
+    // for the entire DC.
+    let kind = EdgeKind::Motorized {
+        // TODO Even assuming these're all roads is wrong
+        roads: associated_original_edges.clone(),
+        service_roads: Vec::new(),
+        sidepaths: Vec::new(),
+        connectors: Vec::new(),
+    };
+
+    for (idx, linestring) in linestrings.into_iter().enumerate() {
+        let e = graph.create_new_edge(
+            linestring,
+            new_intersections[idx],
+            new_intersections[idx + 1],
+            kind.clone(),
+        );
+        // TODO For now, all match up
+        graph
+            .edges
+            .get_mut(&e)
+            .unwrap()
+            .associated_original_edges
+            .extend(associated_original_edges.clone());
+    }
+
+    new_intersections
 }
 
 #[cfg(test)]

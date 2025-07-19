@@ -17,7 +17,7 @@ use wasm_bindgen::prelude::*;
 use crate::areas::Areas;
 use crate::debugger::Debugger;
 use crate::faces::{make_faces, Face, FaceID, FaceKind};
-use crate::graph::{EdgeID, Graph, Intersection, IntersectionID, IntersectionProvenance};
+use crate::graph::{EdgeID, EdgeKind, Graph, Intersection, IntersectionID, IntersectionProvenance};
 
 mod areas;
 mod clean;
@@ -79,6 +79,7 @@ impl RoadBundler {
         for (id, edge) in &self.graph.edges {
             let mut f = self.graph.mercator.to_wgs84_gj(&edge.linestring);
             f.set_property("edge_id", id.0);
+            f.set_property("kind", serde_json::to_value(&edge.kind).map_err(err_to_js)?);
             f.set_property(
                 "provenance",
                 serde_json::to_value(&edge.provenance).map_err(err_to_js)?,
@@ -133,9 +134,14 @@ impl RoadBundler {
         let fc = FeatureCollection {
             features,
             bbox: None,
-            foreign_members: Some(serde_json::json!({
-                "tags_per_way": &self.graph.tags_per_way,
-            }).as_object().unwrap().clone()),
+            foreign_members: Some(
+                serde_json::json!({
+                    "tags_per_way": &self.graph.tags_per_way,
+                })
+                .as_object()
+                .unwrap()
+                .clone(),
+            ),
         };
         serde_json::to_string(&fc).map_err(err_to_js)
     }

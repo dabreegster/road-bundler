@@ -124,6 +124,18 @@
       openOn={$tool == "dogleg" || $tool == "clean" ? "hover" : "click"}
       let:props
     >
+      {@const kind = JSON.parse(props.kind)}
+      {#if kind.Motorized}
+        <h4>Edge {props.edge_id}, motorized</h4>
+        <p>Roads: {kind.Motorized.roads.join(", ")}</p>
+        <p>Service roads: {kind.Motorized.service_roads.join(", ")}</p>
+        <p>Sidepaths: {kind.Motorized.sidepaths.join(", ")}</p>
+        <p>Connectors: {kind.Motorized.connectors.join(", ")}</p>
+      {:else}
+        <h4>Edge {props.edge_id}, non-motorized</h4>
+        <p>Pieces: {kind.Nonmotorized.join(", ")}</p>
+      {/if}
+
       {#if props.provenance == "Synthetic"}
         <h4>Edge {props.edge_id}, synthetic</h4>
       {:else}

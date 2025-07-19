@@ -3,7 +3,6 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 use geo::{LineString, Point, Polygon};
 use osm_reader::{NodeID, WayID};
 use serde::Serialize;
-pub use utils::osm2graph::{EdgeID, IntersectionID};
 use utils::{Mercator, Tags};
 
 #[derive(Clone)]
@@ -13,11 +12,17 @@ pub struct Graph {
     // All geometry is stored in world-space
     pub mercator: Mercator,
     pub boundary_polygon: Polygon,
+    // TODO Wrong, we need to store osm provenance per original edge ID
     pub tags_per_way: HashMap<WayID, Tags>,
 
     intersection_id_counter: usize,
     edge_id_counter: usize,
 }
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord, Serialize)]
+pub struct EdgeID(pub usize);
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord, Serialize)]
+pub struct IntersectionID(pub usize);
 
 #[derive(Clone)]
 pub struct Edge {
@@ -26,6 +31,7 @@ pub struct Edge {
     pub dst: IntersectionID,
     pub linestring: LineString,
     pub provenance: EdgeProvenance,
+    pub kind: EdgeKind,
 
     /// Any edges from the original_graph that've been consolidated into this one. It should maybe
     /// only be defined for synthetic edges, but sidepath matching is still TBD
@@ -99,6 +105,28 @@ pub enum EdgeProvenance {
     Synthetic,
 }
 
+/// All of the EdgeIDs referenced are edges in the **original** graph.
+/// TODO Strongly consider different types to emphasize that
+#[derive(Clone, Serialize)]
+pub enum EdgeKind {
+    Motorized {
+        /// The main driveable roads, possibly in different directions for a dual carriageway
+        roads: Vec<EdgeID>,
+        /// Smaller service roads associated. Could include a whole sub-network of service roads
+        /// nearby, not just little driveways. So two separate Motorized edges might both reference
+        /// the same service roads.
+        service_roads: Vec<EdgeID>,
+        /// Footways and cycleways that are parallel to the main driveable road
+        sidepaths: Vec<EdgeID>,
+        /// Footway and cycleway crossings and related pieces that aren't parallel to the main
+        /// driveable road
+        // TODO and maybe pieces of DCs too?
+        connectors: Vec<EdgeID>,
+    },
+    /// Footways and cycleways that're off-road / not parallel to a driveable road
+    Nonmotorized(Vec<EdgeID>),
+}
+
 #[derive(Clone)]
 pub struct Intersection {
     #[allow(unused)]
@@ -131,11 +159,11 @@ impl Graph {
                 .into_iter()
                 .map(|(_, e)| {
                     (
-                        e.id,
+                        e.id.into(),
                         Edge {
-                            id: e.id,
-                            src: e.src,
-                            dst: e.dst,
+                            id: e.id.into(),
+                            src: e.src.into(),
+                            dst: e.dst.into(),
                             linestring: e.linestring,
                             provenance: EdgeProvenance::OSM {
                                 way: e.osm_way,
@@ -143,6 +171,7 @@ impl Graph {
                                 node2: e.osm_node2,
                             },
                             associated_original_edges: BTreeSet::new(),
+                            kind: EdgeKind::initially_classify(e.id.into(), &e.osm_tags),
                         },
                     )
                 })
@@ -152,10 +181,10 @@ impl Graph {
                 .into_iter()
                 .map(|(_, i)| {
                     (
-                        i.id,
+                        i.id.into(),
                         Intersection {
-                            id: i.id,
-                            edges: i.edges,
+                            id: i.id.into(),
+                            edges: i.edges.into_iter().map(|e| e.into()).collect(),
                             point: i.point,
                             provenance: IntersectionProvenance::OSM(i.osm_node),
                         },
@@ -204,55 +233,13 @@ impl Graph {
         }
     }
 
-    /// Returns the new intersections created
-    pub fn create_new_linked_edges(
-        &mut self,
-        linestrings: Vec<LineString>,
-        endpoints: Vec<Point>,
-        associated_original_edges: Vec<EdgeID>,
-    ) -> Vec<IntersectionID> {
-        // Assumes linestrings all point in the correct way
-        // Assumes endpoints comes from linestring_endpoints (TODO maybe just call it here)
-        assert_eq!(linestrings.len() + 1, endpoints.len());
-
-        let mut new_intersections = Vec::new();
-        for point in endpoints {
-            let id = self.new_intersection_id();
-            self.intersections.insert(
-                id,
-                Intersection {
-                    id,
-                    edges: vec![],
-                    point,
-                    provenance: IntersectionProvenance::Synthetic,
-                },
-            );
-            new_intersections.push(id);
-        }
-
-        for (idx, linestring) in linestrings.into_iter().enumerate() {
-            let e = self.create_new_edge(
-                linestring,
-                new_intersections[idx],
-                new_intersections[idx + 1],
-            );
-            // TODO For now, all match up
-            self.edges
-                .get_mut(&e)
-                .unwrap()
-                .associated_original_edges
-                .extend(associated_original_edges.clone());
-        }
-
-        new_intersections
-    }
-
     /// Trusts the linestring to go from `src` to `dst`
     pub fn create_new_edge(
         &mut self,
         linestring: LineString,
         src: IntersectionID,
         dst: IntersectionID,
+        kind: EdgeKind,
     ) -> EdgeID {
         let id = self.new_edge_id();
         self.edges.insert(
@@ -262,6 +249,7 @@ impl Graph {
                 src,
                 dst,
                 linestring,
+                kind,
                 provenance: EdgeProvenance::Synthetic,
                 associated_original_edges: BTreeSet::new(),
             },
@@ -314,6 +302,83 @@ impl Graph {
             } else {
                 panic!("replace_intersection saw inconsistent state about an edge connected to an intersection");
             }
+        }
+    }
+}
+
+// osm2graph's equivalents aren't serializable
+impl From<utils::osm2graph::EdgeID> for EdgeID {
+    fn from(id: utils::osm2graph::EdgeID) -> Self {
+        Self(id.0)
+    }
+}
+
+impl From<utils::osm2graph::IntersectionID> for IntersectionID {
+    fn from(id: utils::osm2graph::IntersectionID) -> Self {
+        Self(id.0)
+    }
+}
+
+impl EdgeKind {
+    fn initially_classify(e: EdgeID, tags: &Tags) -> Self {
+        if tags.is_any(
+            "highway",
+            vec![
+                "footway", "cycleway", "elevator", "path", "platform", "steps", "track",
+            ],
+        ) {
+            // These might not be off-road, but we don't know yet
+            return Self::Nonmotorized(vec![e]);
+        }
+
+        if tags.is_any("highway", vec!["corridor", "service"]) {
+            return Self::Motorized {
+                roads: Vec::new(),
+                service_roads: vec![e],
+                sidepaths: Vec::new(),
+                connectors: Vec::new(),
+            };
+        }
+
+        Self::Motorized {
+            roads: vec![e],
+            service_roads: Vec::new(),
+            sidepaths: Vec::new(),
+            connectors: Vec::new(),
+        }
+    }
+
+    /// Only two Motorized or two Nonmotorized edges can be combined
+    pub fn merge(&self, other: &Self) -> Option<Self> {
+        match (self, other) {
+            (
+                Self::Motorized {
+                    roads: roads1,
+                    service_roads: service_roads1,
+                    sidepaths: sidepaths1,
+                    connectors: connectors1,
+                },
+                Self::Motorized {
+                    roads: roads2,
+                    service_roads: service_roads2,
+                    sidepaths: sidepaths2,
+                    connectors: connectors2,
+                },
+            ) => Some(Self::Motorized {
+                roads: roads1.iter().chain(roads2).cloned().collect(),
+                // TODO Should dedupe to be careful
+                service_roads: service_roads1
+                    .iter()
+                    .chain(service_roads2)
+                    .cloned()
+                    .collect(),
+                sidepaths: sidepaths1.iter().chain(sidepaths2).cloned().collect(),
+                connectors: connectors1.iter().chain(connectors2).cloned().collect(),
+            }),
+            (Self::Nonmotorized(edges1), Self::Nonmotorized(edges2)) => Some(Self::Nonmotorized(
+                edges1.iter().chain(edges2).cloned().collect(),
+            )),
+            _ => None,
         }
     }
 }
