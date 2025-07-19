@@ -52,7 +52,6 @@ export interface EdgeProps {
           way: number;
           node1: number;
           node2: number;
-          tags: Record<string, string>;
         };
       }
     | "Synthetic";
@@ -66,6 +65,10 @@ export interface IntersectionProps {
   intersection_id: number;
   provenance: { OSM: number } | "Synthetic";
 }
+
+export type OriginalGraph = FeatureCollection & {
+  tags_per_way: Record<number, Record<string, string>>;
+};
 
 export let colors = {
   UrbanBlock: "purple",

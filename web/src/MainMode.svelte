@@ -11,6 +11,7 @@
     type IntersectionProps,
     type EdgeProps,
     type FaceProps,
+    type OriginalGraph,
   } from "./";
   import { SplitComponent } from "svelte-utils/two_column_layout";
   import { GeoJSON, LineLayer, CircleLayer, Control } from "svelte-maplibre";
@@ -45,7 +46,7 @@
   let buildings: FeatureCollection<Point> = JSON.parse(
     $backend!.getBuildings(),
   );
-  let originalGraph: FeatureCollection = JSON.parse(
+  let originalGraph: OriginalGraph = JSON.parse(
     $backend!.getOriginalOsmGraph(),
   );
 

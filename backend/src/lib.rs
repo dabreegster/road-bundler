@@ -10,7 +10,7 @@ use std::sync::Once;
 
 use anyhow::Result;
 use geo::{Euclidean, Length};
-use geojson::GeoJson;
+use geojson::{FeatureCollection, GeoJson};
 use utils::Tags;
 use wasm_bindgen::prelude::*;
 
@@ -83,7 +83,7 @@ impl RoadBundler {
                 "provenance",
                 serde_json::to_value(&edge.provenance).map_err(err_to_js)?,
             );
-            f.set_property("is_road", !edge.is_sidewalk_or_cycleway());
+            f.set_property("is_road", !edge.is_sidewalk_or_cycleway(&self.graph));
             f.set_property("length", Euclidean.length(&edge.linestring).round());
             f.set_property(
                 "bearing",
@@ -130,7 +130,14 @@ impl RoadBundler {
         for (_, i) in &self.original_graph.intersections {
             features.push(self.graph.mercator.to_wgs84_gj(&i.point));
         }
-        serde_json::to_string(&GeoJson::from(features)).map_err(err_to_js)
+        let fc = FeatureCollection {
+            features,
+            bbox: None,
+            foreign_members: Some(serde_json::json!({
+                "tags_per_way": &self.graph.tags_per_way,
+            }).as_object().unwrap().clone()),
+        };
+        serde_json::to_string(&fc).map_err(err_to_js)
     }
 
     #[wasm_bindgen(js_name = getFaces)]

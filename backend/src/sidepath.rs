@@ -23,8 +23,8 @@ impl Sidepath {
         let mut sidepath_bearings = Vec::new();
         for e in &face.boundary_edges {
             let edge = &graph.edges[e];
-            if edge.is_sidewalk_or_cycleway() {
-                if !edge.is_crossing() {
+            if edge.is_sidewalk_or_cycleway(graph) {
+                if !edge.is_crossing(graph) {
                     sidepath_edges.push(*e);
                     sidepath_bearings.push(linestring_bearing(&edge.linestring));
                 }
@@ -98,7 +98,7 @@ impl RoadBundler {
             .graph
             .edges
             .iter()
-            .filter(|(_, edge)| edge.is_sidewalk_or_cycleway())
+            .filter(|(_, edge)| edge.is_sidewalk_or_cycleway(&self.graph))
             .map(|(id, _)| *id)
             .collect();
         for e in remove_edges {

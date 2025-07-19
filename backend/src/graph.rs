@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use geo::{LineString, Point, Polygon};
 use osm_reader::{NodeID, WayID};
@@ -13,6 +13,7 @@ pub struct Graph {
     // All geometry is stored in world-space
     pub mercator: Mercator,
     pub boundary_polygon: Polygon,
+    pub tags_per_way: HashMap<WayID, Tags>,
 
     intersection_id_counter: usize,
     edge_id_counter: usize,
@@ -32,33 +33,35 @@ pub struct Edge {
 }
 
 impl Edge {
-    pub fn is_oneway(&self) -> bool {
+    pub fn is_oneway(&self, graph: &Graph) -> bool {
         match self.provenance {
-            EdgeProvenance::OSM { ref tags, .. } => tags.is("oneway", "yes"),
+            EdgeProvenance::OSM { way, .. } => graph.tags_per_way[&way].is("oneway", "yes"),
             EdgeProvenance::Synthetic => false,
         }
     }
 
-    pub fn is_parking_aisle(&self) -> bool {
+    pub fn is_parking_aisle(&self, graph: &Graph) -> bool {
         match self.provenance {
-            EdgeProvenance::OSM { ref tags, .. } => tags.is("service", "parking_aisle"),
+            EdgeProvenance::OSM { way, .. } => {
+                graph.tags_per_way[&way].is("service", "parking_aisle")
+            }
             EdgeProvenance::Synthetic => false,
         }
     }
 
-    pub fn is_service_road(&self) -> bool {
+    pub fn is_service_road(&self, graph: &Graph) -> bool {
         match self.provenance {
-            EdgeProvenance::OSM { ref tags, .. } => {
-                tags.is_any("highway", vec!["corridor", "service"])
+            EdgeProvenance::OSM { way, .. } => {
+                graph.tags_per_way[&way].is_any("highway", vec!["corridor", "service"])
             }
             EdgeProvenance::Synthetic => false,
         }
     }
 
     // TODO Rename and handle more cases
-    pub fn is_sidewalk_or_cycleway(&self) -> bool {
+    pub fn is_sidewalk_or_cycleway(&self, graph: &Graph) -> bool {
         match self.provenance {
-            EdgeProvenance::OSM { ref tags, .. } => tags.is_any(
+            EdgeProvenance::OSM { way, .. } => graph.tags_per_way[&way].is_any(
                 "highway",
                 vec![
                     "footway", "cycleway", "elevator", "path", "platform", "steps", "track",
@@ -68,19 +71,19 @@ impl Edge {
         }
     }
 
-    pub fn is_crossing(&self) -> bool {
+    pub fn is_crossing(&self, graph: &Graph) -> bool {
         match self.provenance {
-            EdgeProvenance::OSM { ref tags, .. } => {
-                tags.is_any("footway", vec!["crossing", "traffic_island"])
-                    || tags.is("cycleway", "crossing")
+            EdgeProvenance::OSM { way, .. } => {
+                graph.tags_per_way[&way].is_any("footway", vec!["crossing", "traffic_island"])
+                    || graph.tags_per_way[&way].is("cycleway", "crossing")
             }
             EdgeProvenance::Synthetic => false,
         }
     }
 
-    pub fn get_name(&self) -> Option<&String> {
+    pub fn get_name<'a>(&self, graph: &'a Graph) -> Option<&'a String> {
         match self.provenance {
-            EdgeProvenance::OSM { ref tags, .. } => tags.get("name"),
+            EdgeProvenance::OSM { way, .. } => graph.tags_per_way[&way].get("name"),
             EdgeProvenance::Synthetic => None,
         }
     }
@@ -92,7 +95,6 @@ pub enum EdgeProvenance {
         way: WayID,
         node1: NodeID,
         node2: NodeID,
-        tags: Tags,
     },
     Synthetic,
 }
@@ -117,6 +119,11 @@ impl Graph {
     pub fn new(osm_graph: utils::osm2graph::Graph) -> Self {
         let intersection_id_counter = osm_graph.intersections.keys().max().unwrap().0 + 1;
         let edge_id_counter = osm_graph.edges.keys().max().unwrap().0 + 1;
+        let tags_per_way = osm_graph
+            .edges
+            .values()
+            .map(|e| (e.osm_way, e.osm_tags.clone()))
+            .collect();
 
         Self {
             edges: osm_graph
@@ -134,7 +141,6 @@ impl Graph {
                                 way: e.osm_way,
                                 node1: e.osm_node1,
                                 node2: e.osm_node2,
-                                tags: e.osm_tags,
                             },
                             associated_original_edges: BTreeSet::new(),
                         },
@@ -158,6 +164,7 @@ impl Graph {
                 .collect(),
             mercator: osm_graph.mercator,
             boundary_polygon: osm_graph.boundary_polygon,
+            tags_per_way,
 
             intersection_id_counter,
             edge_id_counter,

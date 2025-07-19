@@ -1,5 +1,12 @@
 <script lang="ts">
-  import { colors, controls, tool, backend, type EdgeProps } from "../";
+  import {
+    colors,
+    controls,
+    tool,
+    backend,
+    type OriginalGraph,
+    type EdgeProps,
+  } from "../";
   import {
     hoverStateFilter,
     GeoJSON,
@@ -13,7 +20,7 @@
 
   export let edges: FeatureCollection<LineString, EdgeProps>;
   export let afterMutation: (undoDiff: number) => void;
-  export let originalGraph: FeatureCollection;
+  export let originalGraph: OriginalGraph;
   export let debuggedEdge: FeatureCollection;
 
   let tmpHoveredEdge: Feature | null = null;
@@ -33,7 +40,7 @@
   }
 
   function getOriginalEdges(
-    originalGraph: FeatureCollection,
+    originalGraph: OriginalGraph,
   ): Record<number, Feature> {
     let edges: Record<number, Feature> = {};
     for (let f of originalGraph.features) {
@@ -144,7 +151,11 @@
       </p>
 
       {#if props.provenance != "Synthetic"}
-        <PropertiesTable properties={JSON.parse(props.provenance).OSM.tags} />
+        <PropertiesTable
+          properties={originalGraph.tags_per_way[
+            JSON.parse(props.provenance).OSM.way
+          ]}
+        />
       {/if}
     </Popup>
   </LineLayer>

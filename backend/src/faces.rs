@@ -88,11 +88,11 @@ pub fn make_faces(graph: &Graph, areas: &Areas) -> BTreeMap<FaceID, Face> {
             .count();
         let has_parking_aisle = boundary_edges
             .iter()
-            .any(|e| graph.edges[e].is_parking_aisle());
+            .any(|e| graph.edges[e].is_parking_aisle(graph));
         let mut num_roads = 0;
         let mut num_non_roads = 0;
         for e in &boundary_edges {
-            if graph.edges[e].is_sidewalk_or_cycleway() {
+            if graph.edges[e].is_sidewalk_or_cycleway(graph) {
                 num_non_roads += 1;
             } else {
                 num_roads += 1;
