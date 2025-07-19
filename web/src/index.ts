@@ -64,15 +64,6 @@ export interface EdgeProps {
           connectors: number[];
         };
       };
-  provenance:
-    | {
-        OSM: {
-          way: number;
-          node1: number;
-          node2: number;
-        };
-      }
-    | "Synthetic";
   length: number;
   bearing: number;
   associated_original_edges: number[];
@@ -80,12 +71,10 @@ export interface EdgeProps {
 
 export interface IntersectionProps {
   intersection_id: number;
-  provenance: { OSM: number } | "Synthetic";
 }
 
-export type OriginalGraph = FeatureCollection & {
-  tags_per_way: Record<number, Record<string, string>>;
-};
+// TODO Lost some of the specifity here, boo
+export type OriginalGraph = FeatureCollection;
 
 export let colors = {
   UrbanBlock: "purple",

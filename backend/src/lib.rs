@@ -10,7 +10,7 @@ use std::sync::Once;
 
 use anyhow::Result;
 use geo::{Euclidean, Length};
-use geojson::{FeatureCollection, GeoJson};
+use geojson::GeoJson;
 use utils::Tags;
 use wasm_bindgen::prelude::*;
 
@@ -81,10 +81,6 @@ impl RoadBundler {
             f.set_property("edge_id", id.0);
             f.set_property("kind", serde_json::to_value(&edge.kind).map_err(err_to_js)?);
             f.set_property("simple_kind", edge.kind.to_simple());
-            f.set_property(
-                "provenance",
-                serde_json::to_value(&edge.provenance).map_err(err_to_js)?,
-            );
             f.set_property("length", Euclidean.length(&edge.linestring).round());
             f.set_property(
                 "bearing",
@@ -111,10 +107,6 @@ impl RoadBundler {
         for (id, i) in &self.graph.intersections {
             let mut f = self.graph.mercator.to_wgs84_gj(&i.point);
             f.set_property("intersection_id", id.0);
-            f.set_property(
-                "provenance",
-                serde_json::to_value(&i.provenance).map_err(err_to_js)?,
-            );
             features.push(f);
         }
         serde_json::to_string(&GeoJson::from(features)).map_err(err_to_js)
@@ -127,24 +119,18 @@ impl RoadBundler {
             let mut f = self.graph.mercator.to_wgs84_gj(&edge.linestring);
             f.set_property("edge_id", id.0);
             f.set_property("simple_kind", edge.kind.to_simple());
+            // This is safe!
+            let orig = &self.original_graph.original_edges[&crate::graph::OriginalEdgeID(id.0)];
+            f.set_property("way", orig.way.0);
+            f.set_property("node1", orig.node1.0);
+            f.set_property("node2", orig.node2.0);
+            f.set_property("tags", serde_json::to_value(&orig.tags).unwrap());
             features.push(f);
         }
         for (_, i) in &self.original_graph.intersections {
             features.push(self.graph.mercator.to_wgs84_gj(&i.point));
         }
-        let fc = FeatureCollection {
-            features,
-            bbox: None,
-            foreign_members: Some(
-                serde_json::json!({
-                    "tags_per_way": &self.graph.tags_per_way,
-                })
-                .as_object()
-                .unwrap()
-                .clone(),
-            ),
-        };
-        serde_json::to_string(&fc).map_err(err_to_js)
+        serde_json::to_string(&GeoJson::from(features)).map_err(err_to_js)
     }
 
     #[wasm_bindgen(js_name = getFaces)]

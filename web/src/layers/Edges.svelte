@@ -128,29 +128,47 @@
         <p>Service roads: {kind.Motorized.service_roads.join(", ")}</p>
         <p>Sidepaths: {kind.Motorized.sidepaths.join(", ")}</p>
         <p>Connectors: {kind.Motorized.connectors.join(", ")}</p>
+
+        <!-- TODO nicer scroller -->
+        {#each [...kind.Motorized.roads, ...kind.Motorized.service_roads, ...kind.Motorized.sidepaths, ...kind.Motorized.connectors] as e}
+          {@const orig = originalEdges[e].properties}
+          <details>
+            <summary>Original edge {e}</summary>
+          <a
+            href={`https://www.openstreetmap.org/way/${orig.way}`}
+            target="_blank"
+          >
+            Way {orig.way}
+          </a>
+
+        <PropertiesTable
+          properties={orig.tags}
+        />
+          </details>
+        {/each}
       {:else}
         <h4>Edge {props.edge_id}, non-motorized</h4>
         <p>Pieces: {kind.Nonmotorized.join(", ")}</p>
-      {/if}
 
-      {#if props.provenance == "Synthetic"}
-        <h4>Edge {props.edge_id}, synthetic</h4>
-      {:else}
-        {@const x = JSON.parse(props.provenance)}
-        <h4>
-          Edge {props.edge_id},
+        <!-- TODO nicer scroller -->
+        {#each kind.Nonmotorized as e }
+          {@const orig = originalEdges[e].properties}
+          <details>
+            <summary>Original edge {e}</summary>
           <a
-            href={`https://www.openstreetmap.org/way/${x.OSM.way}`}
+            href={`https://www.openstreetmap.org/way/${orig.way}`}
             target="_blank"
           >
-            Way {x.OSM.way}
+            Way {orig.way}
           </a>
-        </h4>
+
+        <PropertiesTable
+          properties={orig.tags}
+        />
+          </details>
+        {/each}
       {/if}
 
-      <p>
-        Original edges: {JSON.parse(props.associated_original_edges).join(", ")}
-      </p>
       <p>Length {props.length}m</p>
       <p>
         Bearing {props.bearing}
@@ -158,14 +176,6 @@
           ⬆
         </span>
       </p>
-
-      {#if props.provenance != "Synthetic"}
-        <PropertiesTable
-          properties={originalGraph.tags_per_way[
-            JSON.parse(props.provenance).OSM.way
-          ]}
-        />
-      {/if}
     </Popup>
   </LineLayer>
 </GeoJSON>

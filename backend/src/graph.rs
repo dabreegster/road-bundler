@@ -12,7 +12,9 @@ pub struct Graph {
     // All geometry is stored in world-space
     pub mercator: Mercator,
     pub boundary_polygon: Polygon,
-    // TODO Wrong, we need to store osm provenance per original edge ID
+
+    pub original_edges: HashMap<OriginalEdgeID, OriginalEdge>,
+    // TODO Get rid of this one
     pub tags_per_way: HashMap<WayID, Tags>,
 
     intersection_id_counter: usize,
@@ -110,6 +112,14 @@ pub enum EdgeProvenance {
 }
 
 #[derive(Clone, Serialize)]
+pub struct OriginalEdge {
+    pub way: WayID,
+    pub node1: NodeID,
+    pub node2: NodeID,
+    pub tags: Tags,
+}
+
+#[derive(Clone, Serialize)]
 pub enum EdgeKind {
     Motorized {
         /// The main driveable roads, possibly in different directions for a dual carriageway.
@@ -156,6 +166,21 @@ impl Graph {
             .values()
             .map(|e| (e.osm_way, e.osm_tags.clone()))
             .collect();
+        let original_edges = osm_graph
+            .edges
+            .iter()
+            .map(|(id, e)| {
+                (
+                    OriginalEdgeID(id.0),
+                    OriginalEdge {
+                        way: e.osm_way,
+                        node1: e.osm_node1,
+                        node2: e.osm_node2,
+                        tags: e.osm_tags.clone(),
+                    },
+                )
+            })
+            .collect();
 
         Self {
             edges: osm_graph
@@ -198,6 +223,7 @@ impl Graph {
             mercator: osm_graph.mercator,
             boundary_polygon: osm_graph.boundary_polygon,
             tags_per_way,
+            original_edges,
 
             intersection_id_counter,
             edge_id_counter,
