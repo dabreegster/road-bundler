@@ -70,7 +70,13 @@
 
 <SplitComponent>
   <div slot="sidebar">
-    <Sidebar {undoCount} {afterMutation} bind:allRoadWidths {hoveredFace} />
+    <Sidebar
+      {undoCount}
+      {afterMutation}
+      bind:allRoadWidths
+      {hoveredFace}
+      {edges}
+    />
   </div>
 
   <div slot="map">

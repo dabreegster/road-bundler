@@ -1,13 +1,20 @@
 <script lang="ts">
   import { RoadBundler } from "backend";
   import ToolSwitcher from "./ToolSwitcher.svelte";
-  import { controls, backend, tool, type FaceProps } from "../";
-  import type { FeatureCollection, Feature, Polygon } from "geojson";
+  import { controls, backend, tool, type EdgeProps, type FaceProps } from "../";
+  import type {
+    LineString,
+    FeatureCollection,
+    Feature,
+    Polygon,
+  } from "geojson";
+  import { downloadGeneratedFile } from "svelte-utils";
 
   export let undoCount: number;
   export let afterMutation: (undoDiff: number) => void;
   export let allRoadWidths: FeatureCollection;
   export let hoveredFace: Feature<Polygon, FaceProps> | null;
+  export let edges: FeatureCollection<LineString, EdgeProps>;
 
   function keyDown(e: KeyboardEvent) {
     if (e.key == "z" && e.ctrlKey && undoCount > 0) {
@@ -56,6 +63,30 @@
   function getAllRoadWidths() {
     allRoadWidths = JSON.parse($backend!.getAllRoadWidths());
   }
+
+  function downloadRoads() {
+    downloadGeneratedFile(
+      "roads.geojson",
+      JSON.stringify({
+        type: "FeatureCollection",
+        features: edges.features.filter(
+          (f) =>
+            "Motorized" in f.properties.kind &&
+            f.properties.kind.Motorized.roads.length > 0,
+        ),
+      }),
+    );
+
+    downloadGeneratedFile(
+      "nonmotorized.geojson",
+      JSON.stringify({
+        type: "FeatureCollection",
+        features: edges.features.filter(
+          (f) => "Nonmotorized" in f.properties.kind,
+        ),
+      }),
+    );
+  }
 </script>
 
 <svelte:window on:keydown={keyDown} />
@@ -102,6 +133,10 @@
     on:click={() => doBulkEdit((b) => b.removeAllSidepaths())}
   >
     Remove all sidepaths
+  </button>
+
+  <button class="outline" on:click={downloadRoads}>
+    Download GJ of motorized and nonmotorized roads
   </button>
 {:else if $tool == "dogleg"}
   <p>Click a dog-leg edge to collapse it</p>
