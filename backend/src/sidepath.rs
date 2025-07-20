@@ -25,16 +25,23 @@ impl Sidepath {
         let mut sidepath_bearings = Vec::new();
         for e in &face.boundary_edges {
             let edge = &graph.edges[e];
-            // We're assuming EdgeType::Nonmotorized for these
-            if edge.is_sidewalk_or_cycleway(graph) {
-                if edge.is_crossing(graph) {
-                    connector_edges.push(*e);
-                } else {
-                    sidepath_edges.push(*e);
-                    sidepath_bearings.push(linestring_bearing(&edge.linestring));
+            match &edge.kind {
+                EdgeKind::Nonmotorized(edges) => {
+                    // We shouldn't have a mix of crossings and not
+                    if edges.iter().all(|e| {
+                        let tags = &graph.original_edges[e].tags;
+                        tags.is_any("footway", vec!["crossing", "traffic_island"])
+                            || tags.is("cycleway", "crossing")
+                    }) {
+                        connector_edges.push(*e);
+                    } else {
+                        sidepath_edges.push(*e);
+                        sidepath_bearings.push(linestring_bearing(&edge.linestring));
+                    }
                 }
-            } else {
-                road_edges.push(*e);
+                EdgeKind::Motorized { .. } => {
+                    road_edges.push(*e);
+                }
             }
         }
 

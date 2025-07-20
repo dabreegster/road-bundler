@@ -82,7 +82,7 @@ impl RoadBundler {
         if Euclidean.length(&edge.linestring) > 5.0 {
             return None;
         }
-        if edge.get_name(&self.graph).is_none() {
+        if edge.kind.get_road_name(&self.graph).is_none() {
             return None;
         }
         let mut src_edges = self.graph.intersections[&edge.src].edges.clone();
@@ -93,10 +93,14 @@ impl RoadBundler {
 
         // Find the two "side roads" with a different name than the short edge
         // (We could use angle to be safer than name)
-        src_edges
-            .retain(|x| self.graph.edges[x].get_name(&self.graph) != edge.get_name(&self.graph));
-        dst_edges
-            .retain(|x| self.graph.edges[x].get_name(&self.graph) != edge.get_name(&self.graph));
+        src_edges.retain(|x| {
+            self.graph.edges[x].kind.get_road_name(&self.graph)
+                != edge.kind.get_road_name(&self.graph)
+        });
+        dst_edges.retain(|x| {
+            self.graph.edges[x].kind.get_road_name(&self.graph)
+                != edge.kind.get_road_name(&self.graph)
+        });
 
         if src_edges.len() != 1 || dst_edges.len() != 1 {
             return None;

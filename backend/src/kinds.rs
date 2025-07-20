@@ -3,7 +3,7 @@ use std::collections::BTreeSet;
 use serde::Serialize;
 use utils::Tags;
 
-use crate::graph::OriginalEdgeID;
+use crate::{graph::OriginalEdgeID, Graph};
 
 #[derive(Clone, Serialize)]
 pub enum EdgeKind {
@@ -108,6 +108,52 @@ impl EdgeKind {
                 "connector"
             }
             Self::Nonmotorized(_) => "nonmotorized",
+        }
+    }
+
+    pub fn is_oneway_road(&self, graph: &Graph) -> bool {
+        match self {
+            EdgeKind::Motorized { roads, .. } => roads
+                .iter()
+                .all(|e| graph.original_edges[e].tags.is("oneway", "yes")),
+            _ => false,
+        }
+    }
+
+    pub fn is_parking_aisle(&self, graph: &Graph) -> bool {
+        match self {
+            EdgeKind::Motorized { service_roads, .. } => service_roads
+                .iter()
+                .all(|e| graph.original_edges[e].tags.is("service", "parking_aisle")),
+            _ => false,
+        }
+    }
+
+    pub fn is_service_road(&self) -> bool {
+        match self {
+            EdgeKind::Motorized {
+                roads,
+                service_roads,
+                ..
+            } => !service_roads.is_empty() && roads.is_empty(),
+            _ => false,
+        }
+    }
+
+    /// Only if it's the same for all constituents
+    pub fn get_road_name<'a>(&self, graph: &'a Graph) -> Option<&'a String> {
+        match self {
+            EdgeKind::Motorized { roads, .. } => {
+                let names: BTreeSet<_> = roads
+                    .iter()
+                    .map(|e| graph.original_edges[e].tags.get("name"))
+                    .collect();
+                if names.len() != 1 {
+                    return None;
+                }
+                names.into_iter().next().unwrap()
+            }
+            _ => None,
         }
     }
 }

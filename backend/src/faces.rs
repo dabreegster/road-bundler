@@ -11,7 +11,7 @@ use rstar::{primitives::GeomWithData, RTree, AABB};
 
 use crate::geo_helpers::SliceNearEndpoints;
 use crate::{
-    Areas, Debugger, EdgeID, Graph, Intersection, IntersectionID, IntersectionProvenance,
+    Areas, Debugger, EdgeID, EdgeKind, Graph, Intersection, IntersectionID, IntersectionProvenance,
     RoadBundler,
 };
 
@@ -88,14 +88,17 @@ pub fn make_faces(graph: &Graph, areas: &Areas) -> BTreeMap<FaceID, Face> {
             .count();
         let has_parking_aisle = boundary_edges
             .iter()
-            .any(|e| graph.edges[e].is_parking_aisle(graph));
+            .any(|e| graph.edges[e].kind.is_parking_aisle(graph));
         let mut num_roads = 0;
         let mut num_non_roads = 0;
         for e in &boundary_edges {
-            if graph.edges[e].is_sidewalk_or_cycleway(graph) {
-                num_non_roads += 1;
-            } else {
-                num_roads += 1;
+            match graph.edges[e].kind {
+                EdgeKind::Motorized { .. } => {
+                    num_roads += 1;
+                }
+                EdgeKind::Nonmotorized(_) => {
+                    num_non_roads += 1;
+                }
             }
         }
         let kind = if num_buildings > 0 {

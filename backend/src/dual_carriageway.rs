@@ -131,14 +131,17 @@ fn detect_dc_edges(graph: &Graph, face: &Face) -> Result<(String, Vec<EdgeID>)> 
     let oneways: Vec<EdgeID> = face
         .boundary_edges
         .iter()
-        .filter(|e| graph.edges[e].is_oneway(graph) && graph.edges[e].get_name(graph).is_some())
+        .filter(|e| {
+            graph.edges[e].kind.is_oneway_road(graph)
+                && graph.edges[e].kind.get_road_name(graph).is_some()
+        })
         .cloned()
         .collect();
 
     // Group by their name
     let oneways_by_name = oneways
         .into_iter()
-        .into_group_map_by(|e| graph.edges[e].get_name(graph).unwrap());
+        .into_group_map_by(|e| graph.edges[e].kind.get_road_name(graph).unwrap());
 
     // Pick the group with the most members
     let (name, dc_edges) = oneways_by_name

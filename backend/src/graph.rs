@@ -16,8 +16,6 @@ pub struct Graph {
     pub boundary_polygon: Polygon,
 
     pub original_edges: HashMap<OriginalEdgeID, OriginalEdge>,
-    // TODO Get rid of this one
-    pub tags_per_way: HashMap<WayID, Tags>,
 
     intersection_id_counter: usize,
     edge_id_counter: usize,
@@ -36,76 +34,7 @@ pub struct Edge {
     pub src: IntersectionID,
     pub dst: IntersectionID,
     pub linestring: LineString,
-    // TODO remove
-    pub provenance: EdgeProvenance,
     pub kind: EdgeKind,
-}
-
-impl Edge {
-    pub fn is_oneway(&self, graph: &Graph) -> bool {
-        match self.provenance {
-            EdgeProvenance::OSM { way, .. } => graph.tags_per_way[&way].is("oneway", "yes"),
-            EdgeProvenance::Synthetic => false,
-        }
-    }
-
-    pub fn is_parking_aisle(&self, graph: &Graph) -> bool {
-        match self.provenance {
-            EdgeProvenance::OSM { way, .. } => {
-                graph.tags_per_way[&way].is("service", "parking_aisle")
-            }
-            EdgeProvenance::Synthetic => false,
-        }
-    }
-
-    pub fn is_service_road(&self, graph: &Graph) -> bool {
-        match self.provenance {
-            EdgeProvenance::OSM { way, .. } => {
-                graph.tags_per_way[&way].is_any("highway", vec!["corridor", "service"])
-            }
-            EdgeProvenance::Synthetic => false,
-        }
-    }
-
-    // TODO Rename and handle more cases
-    pub fn is_sidewalk_or_cycleway(&self, graph: &Graph) -> bool {
-        match self.provenance {
-            EdgeProvenance::OSM { way, .. } => graph.tags_per_way[&way].is_any(
-                "highway",
-                vec![
-                    "footway", "cycleway", "elevator", "path", "platform", "steps", "track",
-                ],
-            ),
-            EdgeProvenance::Synthetic => false,
-        }
-    }
-
-    pub fn is_crossing(&self, graph: &Graph) -> bool {
-        match self.provenance {
-            EdgeProvenance::OSM { way, .. } => {
-                graph.tags_per_way[&way].is_any("footway", vec!["crossing", "traffic_island"])
-                    || graph.tags_per_way[&way].is("cycleway", "crossing")
-            }
-            EdgeProvenance::Synthetic => false,
-        }
-    }
-
-    pub fn get_name<'a>(&self, graph: &'a Graph) -> Option<&'a String> {
-        match self.provenance {
-            EdgeProvenance::OSM { way, .. } => graph.tags_per_way[&way].get("name"),
-            EdgeProvenance::Synthetic => None,
-        }
-    }
-}
-
-#[derive(Clone, Serialize)]
-pub enum EdgeProvenance {
-    OSM {
-        way: WayID,
-        node1: NodeID,
-        node2: NodeID,
-    },
-    Synthetic,
 }
 
 #[derive(Clone, Serialize)]
@@ -136,11 +65,6 @@ impl Graph {
     pub fn new(osm_graph: utils::osm2graph::Graph) -> Self {
         let intersection_id_counter = osm_graph.intersections.keys().max().unwrap().0 + 1;
         let edge_id_counter = osm_graph.edges.keys().max().unwrap().0 + 1;
-        let tags_per_way = osm_graph
-            .edges
-            .values()
-            .map(|e| (e.osm_way, e.osm_tags.clone()))
-            .collect();
         let original_edges = osm_graph
             .edges
             .iter()
@@ -169,11 +93,6 @@ impl Graph {
                             src: e.src.into(),
                             dst: e.dst.into(),
                             linestring: e.linestring,
-                            provenance: EdgeProvenance::OSM {
-                                way: e.osm_way,
-                                node1: e.osm_node1,
-                                node2: e.osm_node2,
-                            },
                             kind: EdgeKind::initially_classify(e.id, &e.osm_tags),
                         },
                     )
@@ -196,7 +115,6 @@ impl Graph {
                 .collect(),
             mercator: osm_graph.mercator,
             boundary_polygon: osm_graph.boundary_polygon,
-            tags_per_way,
             original_edges,
 
             intersection_id_counter,
@@ -254,7 +172,6 @@ impl Graph {
                 dst,
                 linestring,
                 kind,
-                provenance: EdgeProvenance::Synthetic,
             },
         );
         self.intersections.get_mut(&src).unwrap().edges.push(id);
@@ -278,7 +195,7 @@ impl Graph {
             let mut updated = false;
             if edge.src == remove_i {
                 edge.src = new_intersection;
-                // TODO In provenance, should we mark modified cases?
+                // TODO Update IntersectionProvenance?
                 if extend_geometry {
                     edge.linestring
                         .0

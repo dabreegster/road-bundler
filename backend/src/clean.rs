@@ -17,7 +17,7 @@ impl RoadBundler {
             .graph
             .edges
             .iter()
-            .filter(|(_, edge)| edge.is_service_road(&self.graph))
+            .filter(|(_, edge)| edge.kind.is_service_road())
             .map(|(id, _)| *id)
             .collect();
         for e in remove_edges {
