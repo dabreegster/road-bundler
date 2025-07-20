@@ -17,7 +17,8 @@ use wasm_bindgen::prelude::*;
 use crate::areas::Areas;
 use crate::debugger::Debugger;
 use crate::faces::{make_faces, Face, FaceID, FaceKind};
-use crate::graph::{EdgeID, EdgeKind, Graph, Intersection, IntersectionID, IntersectionProvenance};
+use crate::graph::{EdgeID, Graph, Intersection, IntersectionID, IntersectionProvenance};
+use crate::kinds::EdgeKind;
 
 mod areas;
 mod clean;
@@ -27,6 +28,7 @@ mod dual_carriageway;
 mod faces;
 mod geo_helpers;
 mod graph;
+mod kinds;
 mod sidepath;
 mod split_line;
 mod width;
