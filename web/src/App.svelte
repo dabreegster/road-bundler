@@ -21,9 +21,38 @@
   let loading = "";
   let map: Map | undefined;
 
+  let examples: string[] = [];
+  let loadExample = "";
+
   onMount(async () => {
     await init();
+
+    try {
+      let resp = await fetch("/example_osm/list");
+      if (resp.ok) {
+        examples = await resp.json();
+      }
+    } catch (err) {}
   });
+
+  $: loadFromExample(loadExample);
+
+  async function loadFromExample(loadExample: string) {
+    if (loadExample.length == 0) {
+      return;
+    }
+    try {
+      loading = "Loading from example file";
+      let resp = await fetch(`/example_osm/${loadExample}`);
+      let bytes = await resp.arrayBuffer();
+      $backend = new RoadBundler(new Uint8Array(bytes));
+      zoomFit();
+    } catch (err) {
+      window.alert(`Bad input file: ${err}`);
+    } finally {
+      loading = "";
+    }
+  }
 
   let fileInput: HTMLInputElement;
   async function loadFile(e: Event) {
@@ -99,6 +128,19 @@
 
       <br />
     {:else if map}
+      {#if examples.length}
+        <label>
+          Load an example
+          <select bind:value={loadExample}>
+            {#each examples as x}
+              <option value={x}>{x}</option>
+            {/each}
+          </select>
+        </label>
+
+        <i>or...</i>
+      {/if}
+
       <label>
         Load an osm.pbf or osm.xml file
         <input bind:this={fileInput} on:change={loadFile} type="file" />
