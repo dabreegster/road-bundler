@@ -34,7 +34,14 @@ impl EdgeKind {
         if tags.is_any(
             "highway",
             vec![
-                "footway", "cycleway", "elevator", "path", "platform", "steps", "track",
+                "footway",
+                "cycleway",
+                "elevator",
+                "path",
+                "pedestrian",
+                "platform",
+                "steps",
+                "track",
             ],
         ) {
             // These might not be off-road, but we don't know yet
