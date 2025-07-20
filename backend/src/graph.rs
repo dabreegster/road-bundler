@@ -124,21 +124,21 @@ pub enum EdgeKind {
     Motorized {
         /// The main driveable roads, possibly in different directions for a dual carriageway.
         /// Unique per edge.
-        roads: Vec<OriginalEdgeID>,
+        roads: BTreeSet<OriginalEdgeID>,
         /// Smaller service roads associated. Could include a whole sub-network of service roads
         /// nearby, not just little driveways. So two separate Motorized edges might both reference
         /// the same service roads.
-        service_roads: Vec<OriginalEdgeID>,
+        service_roads: BTreeSet<OriginalEdgeID>,
         /// Footways and cycleways that are parallel to the main driveable road. Might match to
         /// multiple edges.
-        sidepaths: Vec<OriginalEdgeID>,
+        sidepaths: BTreeSet<OriginalEdgeID>,
         /// Footway and cycleway crossings and related pieces that aren't parallel to the main
         /// driveable road
         // TODO and maybe pieces of DCs too?
-        connectors: Vec<OriginalEdgeID>,
+        connectors: BTreeSet<OriginalEdgeID>,
     },
     /// Footways and cycleways that're off-road / not parallel to a driveable road
-    Nonmotorized(Vec<OriginalEdgeID>),
+    Nonmotorized(BTreeSet<OriginalEdgeID>),
 }
 
 #[derive(Clone)]
@@ -351,7 +351,7 @@ impl From<utils::osm2graph::IntersectionID> for IntersectionID {
 
 impl EdgeKind {
     fn initially_classify(e: utils::osm2graph::EdgeID, tags: &Tags) -> Self {
-        let id = vec![OriginalEdgeID(e.0)];
+        let id = BTreeSet::from([OriginalEdgeID(e.0)]);
 
         if tags.is_any(
             "highway",
@@ -365,18 +365,18 @@ impl EdgeKind {
 
         if tags.is_any("highway", vec!["corridor", "service"]) {
             return Self::Motorized {
-                roads: Vec::new(),
+                roads: BTreeSet::new(),
                 service_roads: id,
-                sidepaths: Vec::new(),
-                connectors: Vec::new(),
+                sidepaths: BTreeSet::new(),
+                connectors: BTreeSet::new(),
             };
         }
 
         Self::Motorized {
             roads: id,
-            service_roads: Vec::new(),
-            sidepaths: Vec::new(),
-            connectors: Vec::new(),
+            service_roads: BTreeSet::new(),
+            sidepaths: BTreeSet::new(),
+            connectors: BTreeSet::new(),
         }
     }
 
@@ -397,19 +397,14 @@ impl EdgeKind {
                     connectors: connectors2,
                 },
             ) => Some(Self::Motorized {
-                roads: roads1.iter().chain(roads2).cloned().collect(),
-                // TODO Should dedupe to be careful
-                service_roads: service_roads1
-                    .iter()
-                    .chain(service_roads2)
-                    .cloned()
-                    .collect(),
-                sidepaths: sidepaths1.iter().chain(sidepaths2).cloned().collect(),
-                connectors: connectors1.iter().chain(connectors2).cloned().collect(),
+                roads: roads1.union(roads2).cloned().collect(),
+                service_roads: service_roads1.union(service_roads2).cloned().collect(),
+                sidepaths: sidepaths1.union(sidepaths2).cloned().collect(),
+                connectors: connectors1.union(connectors2).cloned().collect(),
             }),
-            (Self::Nonmotorized(edges1), Self::Nonmotorized(edges2)) => Some(Self::Nonmotorized(
-                edges1.iter().chain(edges2).cloned().collect(),
-            )),
+            (Self::Nonmotorized(edges1), Self::Nonmotorized(edges2)) => {
+                Some(Self::Nonmotorized(edges1.union(edges2).cloned().collect()))
+            }
             _ => None,
         }
     }

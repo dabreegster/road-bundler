@@ -66,7 +66,6 @@ export interface EdgeProps {
       };
   length: number;
   bearing: number;
-  associated_original_edges: number[];
 }
 
 export interface IntersectionProps {

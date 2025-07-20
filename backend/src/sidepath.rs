@@ -2,10 +2,11 @@ use anyhow::Result;
 use geojson::GeoJson;
 
 use crate::geo_helpers::linestring_bearing;
-use crate::{Debugger, EdgeID, Face, FaceKind, Graph, RoadBundler};
+use crate::{Debugger, EdgeID, EdgeKind, Face, FaceKind, Graph, RoadBundler};
 
 struct Sidepath {
     sidepath_edges: Vec<EdgeID>,
+    connector_edges: Vec<EdgeID>,
     road_edges: Vec<EdgeID>,
 }
 
@@ -19,12 +20,16 @@ impl Sidepath {
         // TODO https://www.openstreetmap.org/way/974152886
         // We have to use angles too -- there's a tiny bit of sidewalk before the crossing
         let mut sidepath_edges = Vec::new();
+        let mut connector_edges = Vec::new();
         let mut road_edges = Vec::new();
         let mut sidepath_bearings = Vec::new();
         for e in &face.boundary_edges {
             let edge = &graph.edges[e];
+            // We're assuming EdgeType::Nonmotorized for these
             if edge.is_sidewalk_or_cycleway(graph) {
-                if !edge.is_crossing(graph) {
+                if edge.is_crossing(graph) {
+                    connector_edges.push(*e);
+                } else {
                     sidepath_edges.push(*e);
                     sidepath_bearings.push(linestring_bearing(&edge.linestring));
                 }
@@ -36,6 +41,8 @@ impl Sidepath {
         // And then filter the road edges so that they're parallel-ish to some part of the sidepath.
         // We assume the entire road edge has the sidepath. If we need to be more precise later, we'll
         // have to project endpoints and slice the line.
+        //
+        // TODO Do we need to do similar to turn some sidepath_edges into connector_edges?
         road_edges.retain(|e| {
             let bearing = linestring_bearing(&graph.edges[e].linestring);
             sidepath_bearings
@@ -49,6 +56,7 @@ impl Sidepath {
 
         Ok(Self {
             sidepath_edges,
+            connector_edges,
             road_edges,
         })
     }
@@ -68,6 +76,9 @@ pub fn detect_sidepath(graph: &Graph, face: &Face) -> Result<GeoJson> {
             1.0,
         );
     }
+    for e in &sidepath.connector_edges {
+        debug_hover.line(&graph.edges[e].linestring, "connector", "red", 5, 1.0);
+    }
     for e in &sidepath.road_edges {
         debug_hover.line(&graph.edges[e].linestring, "parallel road", "blue", 5, 1.0);
     }
@@ -78,31 +89,57 @@ pub fn detect_sidepath(graph: &Graph, face: &Face) -> Result<GeoJson> {
 impl RoadBundler {
     pub fn remove_all_sidepaths(&mut self) {
         // Make one pass using the faces, to remember associations
+        let mut remove_edges = Vec::new();
         for face in self.faces.values() {
             if let Ok(info) = Sidepath::maybe_new(&self.graph, face) {
-                // TODO This could potentially be many-to-many as expressed now. That seems
-                // possible and valid; we need to properly split and match things up.
+                let mut original_sidepaths = Vec::new();
+                for e in info.sidepath_edges {
+                    remove_edges.push(e);
+
+                    match &self.graph.edges[&e].kind {
+                        EdgeKind::Nonmotorized(orig) => {
+                            original_sidepaths.extend(orig.clone());
+                        }
+                        _ => panic!("A sidepath was Motorized"),
+                    }
+                }
+
+                let mut original_connectors = Vec::new();
+                for e in info.connector_edges {
+                    remove_edges.push(e);
+
+                    match &self.graph.edges[&e].kind {
+                        EdgeKind::Nonmotorized(orig) => {
+                            original_connectors.extend(orig.clone());
+                        }
+                        _ => panic!("A sidepath is Motorized"),
+                    }
+                }
+
+                // Create a many-to-many relationship -- every road will reference every piece of
+                // sidepath and connector. We could try some kind of linear referencing later to
+                // clean it up.
                 for e in info.road_edges {
-                    // TODO Make sure all of the roads are original?
-                    self.graph
-                        .edges
-                        .get_mut(&e)
-                        .unwrap()
-                        .associated_original_edges
-                        .extend(info.sidepath_edges.clone());
+                    match self.graph.edges.get_mut(&e).unwrap().kind {
+                        EdgeKind::Motorized {
+                            ref mut sidepaths,
+                            ref mut connectors,
+                            ..
+                        } => {
+                            sidepaths.extend(original_sidepaths.clone());
+                            connectors.extend(original_connectors.clone());
+                        }
+                        _ => panic!("A road edge is Nonmotorized"),
+                    }
                 }
             }
         }
 
-        let remove_edges: Vec<_> = self
-            .graph
-            .edges
-            .iter()
-            .filter(|(_, edge)| edge.is_sidewalk_or_cycleway(&self.graph))
-            .map(|(id, _)| *id)
-            .collect();
         for e in remove_edges {
-            self.graph.remove_edge(e);
+            // TODO Not sure why something is part of two SidepathArtifacts, but don't crash
+            if self.graph.edges.contains_key(&e) {
+                self.graph.remove_edge(e);
+            }
         }
 
         let remove_intersections: Vec<_> = self

@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use anyhow::{Context, Result};
 use geo::{Distance, Euclidean, LineString, Point};
 use geojson::GeoJson;
@@ -227,10 +229,10 @@ impl RoadBundler {
                     closest_new_i,
                     // TODO Can we associate this with any original edges at all?
                     EdgeKind::Motorized {
-                        roads: Vec::new(),
-                        service_roads: Vec::new(),
-                        sidepaths: Vec::new(),
-                        connectors: Vec::new(),
+                        roads: BTreeSet::new(),
+                        service_roads: BTreeSet::new(),
+                        sidepaths: BTreeSet::new(),
+                        connectors: BTreeSet::new(),
                     },
                 );
             }
@@ -274,10 +276,10 @@ fn create_new_linked_edges(
     // TODO Wrong, we need to merge to preserve sidepath relationships and stuff. And not have one
     // for the entire DC.
     let kind = EdgeKind::Motorized {
-        roads: Vec::new(),
-        service_roads: Vec::new(),
-        sidepaths: Vec::new(),
-        connectors: Vec::new(),
+        roads: BTreeSet::new(),
+        service_roads: BTreeSet::new(),
+        sidepaths: BTreeSet::new(),
+        connectors: BTreeSet::new(),
     };
 
     for (idx, linestring) in linestrings.into_iter().enumerate() {

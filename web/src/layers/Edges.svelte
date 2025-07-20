@@ -70,7 +70,7 @@
     }
   }
 
-  function debugAssociatedEdges(
+  function debugConstituentEdges(
     tmpHoveredEdge: Feature | null,
   ): FeatureCollection {
     let gj: FeatureCollection = {
@@ -78,12 +78,32 @@
       features: [],
     };
     if (tmpHoveredEdge && $tool != "width") {
-      for (let e of JSON.parse(
-        tmpHoveredEdge.properties!.associated_original_edges,
-      )) {
-        let edge = originalEdges[e];
-        // TODO We're not being careful to preserve original edges only
-        if (edge) {
+      let kind = JSON.parse(tmpHoveredEdge.properties!.kind);
+      if (kind.Motorized) {
+        for (let e of kind.Motorized.roads) {
+          let edge = JSON.parse(JSON.stringify(originalEdges[e]));
+          edge.properties.simple_kind = "road";
+          gj.features.push(edge);
+        }
+        for (let e of kind.Motorized.service_roads) {
+          let edge = JSON.parse(JSON.stringify(originalEdges[e]));
+          edge.properties.simple_kind = "service road";
+          gj.features.push(edge);
+        }
+        for (let e of kind.Motorized.sidepaths) {
+          let edge = JSON.parse(JSON.stringify(originalEdges[e]));
+          edge.properties.simple_kind = "sidepath";
+          gj.features.push(edge);
+        }
+        for (let e of kind.Motorized.connectors) {
+          let edge = JSON.parse(JSON.stringify(originalEdges[e]));
+          edge.properties.simple_kind = "connector";
+          gj.features.push(edge);
+        }
+      } else {
+        for (let e of kind.Nonmotorized) {
+          let edge = JSON.parse(JSON.stringify(originalEdges[e]));
+          edge.properties.simple_kind = "nonmotorized";
           gj.features.push(edge);
         }
       }
@@ -91,6 +111,22 @@
     return gj;
   }
 </script>
+
+<GeoJSON data={debugConstituentEdges(tmpHoveredEdge)}>
+  <LineLayer
+    id="debug-constituent-edges"
+    beforeId="Road labels"
+    paint={{
+      "line-width": 5,
+      "line-color": constructMatchExpression(
+        ["get", "simple_kind"],
+        colors.edges,
+        "red",
+      ),
+      "line-dasharray": [2, 2],
+    }}
+  />
+</GeoJSON>
 
 <GeoJSON data={edges} generateId>
   <LineLayer
@@ -100,12 +136,7 @@
     bind:hovered={tmpHoveredEdge}
     eventsIfTopMost
     paint={{
-      "line-width": [
-        "case",
-        ["==", 0, ["length", ["get", "associated_original_edges"]]],
-        hoverStateFilter(5, 8),
-        hoverStateFilter(7, 10),
-      ],
+      "line-width": hoverStateFilter(5, 8),
       "line-color": constructMatchExpression(
         ["get", "simple_kind"],
         colors.edges,
@@ -164,20 +195,4 @@
       </p>
     </Popup>
   </LineLayer>
-</GeoJSON>
-
-<GeoJSON data={debugAssociatedEdges(tmpHoveredEdge)}>
-  <LineLayer
-    id="debug-original-edges"
-    beforeId="Road labels"
-    paint={{
-      "line-width": 5,
-      "line-color": constructMatchExpression(
-        ["get", "simple_kind"],
-        colors.edges,
-        "red",
-      ),
-      "line-dasharray": [2, 2],
-    }}
-  />
 </GeoJSON>
