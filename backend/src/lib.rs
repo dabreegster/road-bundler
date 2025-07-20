@@ -86,16 +86,6 @@ impl RoadBundler {
                 "bearing",
                 geo_helpers::linestring_bearing(&edge.linestring).round(),
             );
-            f.set_property(
-                "associated_original_edges",
-                serde_json::to_value(
-                    edge.associated_original_edges
-                        .iter()
-                        .map(|e| e.0)
-                        .collect::<Vec<_>>(),
-                )
-                .map_err(err_to_js)?,
-            );
             features.push(f);
         }
         serde_json::to_string(&GeoJson::from(features)).map_err(err_to_js)

@@ -185,21 +185,13 @@ impl RoadBundler {
             .expect("collapse_dual_carriageway on something that isn't a DC");
 
         // Remove all the boundary_edges
-        let mut associated_original_edges = Vec::new();
         for e in &face.boundary_edges {
-            let edge = self.graph.remove_edge(*e);
-            associated_original_edges.push(*e);
-            associated_original_edges.extend(edge.associated_original_edges);
+            self.graph.remove_edge(*e);
         }
 
         // Create the new split center-lines, with new intersections
-        // TODO Which of the original edges should be associated_original_edges? For now, all
-        let new_intersections = create_new_linked_edges(
-            &mut self.graph,
-            dc.splits.lines,
-            dc.splits.new_endpts,
-            associated_original_edges,
-        );
+        let new_intersections =
+            create_new_linked_edges(&mut self.graph, dc.splits.lines, dc.splits.new_endpts);
 
         // Re-attach every connecting edge to the nearest new intersection
         // (we could maybe preserve more info to do this directly?)
@@ -252,7 +244,6 @@ fn create_new_linked_edges(
     graph: &mut Graph,
     linestrings: Vec<LineString>,
     endpoints: Vec<Point>,
-    associated_original_edges: Vec<EdgeID>,
 ) -> Vec<IntersectionID> {
     // Assumes linestrings all point in the correct way
     // Assumes endpoints comes from linestring_endpoints (TODO maybe just call it here)
@@ -283,19 +274,12 @@ fn create_new_linked_edges(
     };
 
     for (idx, linestring) in linestrings.into_iter().enumerate() {
-        let e = graph.create_new_edge(
+        graph.create_new_edge(
             linestring,
             new_intersections[idx],
             new_intersections[idx + 1],
             kind.clone(),
         );
-        // TODO For now, all match up
-        graph
-            .edges
-            .get_mut(&e)
-            .unwrap()
-            .associated_original_edges
-            .extend(associated_original_edges.clone());
     }
 
     new_intersections

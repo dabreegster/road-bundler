@@ -76,15 +76,7 @@ impl RoadBundler {
         };
         pts.extend(edge2.linestring.0);
 
-        let e = self
-            .graph
+        self.graph
             .create_new_edge(LineString::new(pts), i1, i2, kind);
-        let new_edge = self.graph.edges.get_mut(&e).unwrap();
-        new_edge
-            .associated_original_edges
-            .extend(edge1.associated_original_edges);
-        new_edge
-            .associated_original_edges
-            .extend(edge2.associated_original_edges);
     }
 }

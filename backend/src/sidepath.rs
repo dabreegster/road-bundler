@@ -88,7 +88,7 @@ pub fn detect_sidepath(graph: &Graph, face: &Face) -> Result<GeoJson> {
 
 impl RoadBundler {
     pub fn remove_all_sidepaths(&mut self) {
-        // Make one pass using the faces, to remember associations
+        // Make one pass using the faces, to update associations
         let mut remove_edges = Vec::new();
         for face in self.faces.values() {
             if let Ok(info) = Sidepath::maybe_new(&self.graph, face) {

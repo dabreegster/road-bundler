@@ -37,11 +37,6 @@ pub struct Edge {
     // TODO remove
     pub provenance: EdgeProvenance,
     pub kind: EdgeKind,
-
-    /// Any edges from the original_graph that've been consolidated into this one. It should maybe
-    /// only be defined for synthetic edges, but sidepath matching is still TBD
-    // TODO remove
-    pub associated_original_edges: BTreeSet<EdgeID>,
 }
 
 impl Edge {
@@ -199,7 +194,6 @@ impl Graph {
                                 node1: e.osm_node1,
                                 node2: e.osm_node2,
                             },
-                            associated_original_edges: BTreeSet::new(),
                             kind: EdgeKind::initially_classify(e.id, &e.osm_tags),
                         },
                     )
@@ -281,7 +275,6 @@ impl Graph {
                 linestring,
                 kind,
                 provenance: EdgeProvenance::Synthetic,
-                associated_original_edges: BTreeSet::new(),
             },
         );
         self.intersections.get_mut(&src).unwrap().edges.push(id);
