@@ -130,9 +130,16 @@
 {:else if $tool == "sidepath"}
   <button
     class="outline"
-    on:click={() => doBulkEdit((b) => b.removeAllSidepaths())}
+    on:click={() => doBulkEdit((b) => b.mergeAllSidepaths())}
   >
-    Remove all sidepaths
+    Merge all sidepaths
+  </button>
+
+  <button
+    class="outline"
+    on:click={() => doBulkEdit((b) => b.removeAllFootways())}
+  >
+    Destructively remove all footways
   </button>
 
   <button class="outline" on:click={downloadRoads}>

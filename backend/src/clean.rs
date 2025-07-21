@@ -24,16 +24,7 @@ impl RoadBundler {
             self.graph.remove_edge(e);
         }
 
-        let remove_intersections: Vec<_> = self
-            .graph
-            .intersections
-            .iter()
-            .filter(|(_, i)| i.edges.is_empty())
-            .map(|(id, _)| *id)
-            .collect();
-        for i in remove_intersections {
-            self.graph.remove_empty_intersection(i);
-        }
+        self.graph.remove_all_empty_intersections();
     }
 
     pub fn collapse_degenerate_intersection(&mut self, id: IntersectionID) {

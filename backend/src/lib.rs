@@ -199,9 +199,17 @@ impl RoadBundler {
         cmds_applied
     }
 
-    #[wasm_bindgen(js_name = removeAllSidepaths)]
-    pub fn remove_all_sidepaths_wasm(&mut self) -> usize {
-        let cmd = Command::RemoveAllSidepaths;
+    #[wasm_bindgen(js_name = mergeAllSidepaths)]
+    pub fn merge_all_sidepaths_wasm(&mut self) -> usize {
+        let cmd = Command::MergeAllSidepaths;
+        self.commands.push(cmd);
+        self.apply_cmd(cmd);
+        1
+    }
+
+    #[wasm_bindgen(js_name = removeAllFootways)]
+    pub fn remove_all_footways_wasm(&mut self) -> usize {
+        let cmd = Command::RemoveAllFootways;
         self.commands.push(cmd);
         self.apply_cmd(cmd);
         1
@@ -296,7 +304,8 @@ impl RoadBundler {
             Command::CollapseToCentroid(face) => self.collapse_to_centroid(face),
             Command::CollapseDualCarriageway(face) => self.collapse_dual_carriageway(face),
             Command::CollapseEdge(edge) => self.collapse_edge(edge),
-            Command::RemoveAllSidepaths => self.remove_all_sidepaths(),
+            Command::MergeAllSidepaths => self.merge_all_sidepaths(),
+            Command::RemoveAllFootways => self.remove_all_footways(),
             Command::RemoveAllServiceRoads => self.remove_all_service_roads(),
             Command::RemoveEdge(edge) => self.remove_edge(edge),
             Command::CollapseDegenerateIntersection(i) => self.collapse_degenerate_intersection(i),
@@ -310,7 +319,8 @@ impl RoadBundler {
 pub enum Command {
     CollapseToCentroid(FaceID),
     CollapseDualCarriageway(FaceID),
-    RemoveAllSidepaths,
+    MergeAllSidepaths,
+    RemoveAllFootways,
     RemoveEdge(EdgeID),
     RemoveAllServiceRoads,
     CollapseDegenerateIntersection(IntersectionID),

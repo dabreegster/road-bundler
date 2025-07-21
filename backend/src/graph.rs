@@ -155,6 +155,18 @@ impl Graph {
         }
     }
 
+    pub fn remove_all_empty_intersections(&mut self) {
+        let remove_intersections: Vec<_> = self
+            .intersections
+            .iter()
+            .filter(|(_, i)| i.edges.is_empty())
+            .map(|(id, _)| *id)
+            .collect();
+        for i in remove_intersections {
+            self.remove_empty_intersection(i);
+        }
+    }
+
     /// Trusts the linestring to go from `src` to `dst`
     pub fn create_new_edge(
         &mut self,

@@ -94,7 +94,7 @@ pub fn detect_sidepath(graph: &Graph, face: &Face) -> Result<GeoJson> {
 }
 
 impl RoadBundler {
-    pub fn remove_all_sidepaths(&mut self) {
+    pub fn merge_all_sidepaths(&mut self) {
         // Make one pass using the faces, to update associations
         let mut remove_edges = Vec::new();
         for face in self.faces.values() {
@@ -149,16 +149,31 @@ impl RoadBundler {
             }
         }
 
-        let remove_intersections: Vec<_> = self
-            .graph
-            .intersections
-            .iter()
-            .filter(|(_, i)| i.edges.is_empty())
-            .map(|(id, _)| *id)
-            .collect();
-        for i in remove_intersections {
-            self.graph.remove_empty_intersection(i);
+        self.graph.remove_all_empty_intersections();
+    }
+
+    pub fn remove_all_footways(&mut self) {
+        let mut remove_edges = Vec::new();
+        for edge in self.graph.edges.values() {
+            match &edge.kind {
+                EdgeKind::Nonmotorized(edges) => {
+                    // TODO Refine to match NPW, for example
+                    if edges
+                        .iter()
+                        .any(|e| !self.graph.original_edges[e].tags.is("highway", "cycleway"))
+                    {
+                        remove_edges.push(edge.id);
+                    }
+                }
+                EdgeKind::Motorized { .. } => {}
+            }
         }
+
+        for e in remove_edges {
+            self.graph.remove_edge(e);
+        }
+
+        self.graph.remove_all_empty_intersections();
     }
 }
 

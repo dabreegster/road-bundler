@@ -69,7 +69,7 @@
         ...colors.edges,
         Intersection: colors.Intersection,
       }}
-      itemsPerRow={1}
+      itemsPerRow={2}
     />
 
     <hr />
