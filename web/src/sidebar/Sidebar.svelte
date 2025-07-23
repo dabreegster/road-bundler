@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { RoadBundler } from "backend";
+  import * as backendPkg from "../../../backend/pkg";
   import ToolSwitcher from "./ToolSwitcher.svelte";
   import { controls, backend, tool, type EdgeProps, type FaceProps } from "../";
   import type {
@@ -42,14 +42,14 @@
   function doAllSimplifications() {
     doBulkEdit((b) => {
       return (
-        b.removeAllSidepaths() +
+        b.mergeAllSidepaths() +
         b.removeAllServiceRoads() +
         b.collapseAllDegenerateIntersections()
       );
     });
   }
 
-  function doBulkEdit(cb: (b: RoadBundler) => number) {
+  function doBulkEdit(cb: (b: backendPkg.RoadBundler) => number) {
     try {
       let newCommands = cb($backend!);
       afterMutation(newCommands);

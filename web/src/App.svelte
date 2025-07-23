@@ -15,7 +15,7 @@
     sidebarContents,
     Layout,
   } from "svelte-utils/two_column_layout";
-  import init, { RoadBundler } from "backend";
+  import * as backendPkg from "../../backend/pkg";
   import MainMode from "./MainMode.svelte";
 
   let loading = "";
@@ -25,7 +25,7 @@
   let loadExample = "";
 
   onMount(async () => {
-    await init();
+    await backendPkg.default();
 
     try {
       let resp = await fetch("/example_osm/list");
@@ -45,7 +45,7 @@
       loading = "Loading from example file";
       let resp = await fetch(`/example_osm/${loadExample}`);
       let bytes = await resp.arrayBuffer();
-      $backend = new RoadBundler(new Uint8Array(bytes));
+      $backend = new backendPkg.RoadBundler(new Uint8Array(bytes));
       zoomFit();
     } catch (err) {
       window.alert(`Bad input file: ${err}`);
@@ -59,7 +59,7 @@
     try {
       loading = "Loading from file";
       let bytes = await fileInput.files![0].arrayBuffer();
-      $backend = new RoadBundler(new Uint8Array(bytes));
+      $backend = new backendPkg.RoadBundler(new Uint8Array(bytes));
       zoomFit();
     } catch (err) {
       window.alert(`Bad input file: ${err}`);
@@ -71,7 +71,7 @@
   async function gotXml(e: CustomEvent<{ xml: string }>) {
     try {
       let bytes = new TextEncoder().encode(e.detail.xml);
-      $backend = new RoadBundler(new Uint8Array(bytes));
+      $backend = new backendPkg.RoadBundler(new Uint8Array(bytes));
       zoomFit();
     } catch (err) {
       window.alert(`Couldn't import from Overpass: ${err}`);

@@ -1,8 +1,8 @@
 import { type Writable, writable } from "svelte/store";
-import { RoadBundler } from "backend";
+import * as backendPkg from "../../backend/pkg";
 import type { FeatureCollection } from "geojson";
 
-export let backend: Writable<RoadBundler | null> = writable(null);
+export let backend: Writable<backendPkg.RoadBundler | null> = writable(null);
 
 export let controls: Writable<{
   showFaces: boolean;
