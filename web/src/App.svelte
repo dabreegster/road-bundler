@@ -7,7 +7,13 @@
   import { onMount } from "svelte";
   import { backend } from "./";
   import type { Map } from "maplibre-gl";
-  import { bbox } from "svelte-utils/map";
+  import {
+    bbox,
+    Basemaps,
+    basemapStyles,
+    StandardControls,
+    MapContextMenu,
+  } from "svelte-utils/map";
   import { OverpassSelector } from "svelte-utils/overpass";
   import { Loading } from "svelte-utils";
   import {
@@ -20,6 +26,7 @@
 
   let loading = "";
   let map: Map | undefined;
+  let style = basemapStyles["Maptiler Dataviz"];
 
   let examples: string[] = [];
   let loadExample = "";
@@ -28,7 +35,7 @@
     await backendPkg.default();
 
     try {
-      let resp = await fetch("/example_osm/list");
+      let resp = await fetch("example_osm/list");
       if (resp.ok) {
         examples = await resp.json();
       }
@@ -119,24 +126,33 @@
       <br />
     {:else if map}
       {#if examples.length}
-        <label>
-          Load an example
-          <select bind:value={loadExample}>
-            {#each examples as x}
-              <option value={x}>{x}</option>
-            {/each}
-          </select>
-        </label>
+        <div>
+          <label>
+            Load an example
+            <select class="form-select" bind:value={loadExample}>
+              {#each examples as x}
+                <option value={x}>{x}</option>
+              {/each}
+            </select>
+          </label>
+        </div>
 
-        <i>or...</i>
+        <p class="fst-italic my-3">or...</p>
       {/if}
 
-      <label>
-        Load an osm.pbf or osm.xml file
-        <input bind:this={fileInput} on:change={loadFile} type="file" />
-      </label>
+      <div>
+        <label class="form-label">
+          Load an osm.pbf or osm.xml file
+          <input
+            class="form-control"
+            bind:this={fileInput}
+            on:change={loadFile}
+            type="file"
+          />
+        </label>
+      </div>
 
-      <i>or...</i>
+      <p class="fst-italic my-3">or...</p>
 
       <OverpassSelector
         {map}
@@ -151,8 +167,7 @@
 
   <div slot="main" style="position:relative; width: 100%; height: 100vh;">
     <MapLibre
-      style="https://api.maptiler.com/maps/dataviz/style.json?key=MZEJTanw3WpxRvt7qDfo"
-      standardControls
+      {style}
       hash
       bind:map
       on:error={(e) => {
@@ -160,6 +175,10 @@
         console.log(e.detail.error);
       }}
     >
+      <StandardControls {map} />
+      <MapContextMenu {map} />
+      <Basemaps bind:style choice="Maptiler Dataviz" />
+
       {#if $backend && map}
         <div bind:this={mapDiv} />
 

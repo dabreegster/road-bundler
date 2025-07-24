@@ -92,7 +92,7 @@
 <svelte:window on:keydown={keyDown} />
 
 <div>
-  <button class="btn btn-outline" on:click={undo} disabled={undoCount == 0}>
+  <button class="btn btn-secondary" on:click={undo} disabled={undoCount == 0}>
     Undo ({undoCount})
   </button>
 </div>
