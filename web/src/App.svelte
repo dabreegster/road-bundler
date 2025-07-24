@@ -50,7 +50,7 @@
     }
     try {
       loading = "Loading from example file";
-      let resp = await fetch(`/example_osm/${loadExample}`);
+      let resp = await fetch(`example_osm/${loadExample}`);
       let bytes = await resp.arrayBuffer();
       $backend = new backendPkg.RoadBundler(new Uint8Array(bytes));
       zoomFit();

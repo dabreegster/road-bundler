@@ -1,6 +1,6 @@
 <script lang="ts">
   import { widthLimits, widthColorScale, tool, colors, controls } from "./";
-  import { SequentialLegend, QualitativeLegend } from "svelte-utils";
+  import { Checkbox, SequentialLegend, QualitativeLegend } from "svelte-utils";
   import DebuggerLegend from "./DebuggerLegend.svelte";
   import type { FeatureCollection } from "geojson";
 
@@ -26,38 +26,15 @@
         </label>
       </div>
 
-      <div class="form-check">
-        <label class="form-check-label">
-          <input
-            class="form-check-input"
-            type="checkbox"
-            bind:checked={$controls.showEdges}
-          />
-          Show edges
-        </label>
-      </div>
+      <Checkbox bind:checked={$controls.showEdges}>Show edges</Checkbox>
 
-      <div class="form-check">
-        <label class="form-check-label">
-          <input
-            class="form-check-input"
-            type="checkbox"
-            bind:checked={$controls.showIntersections}
-          />
-          Show intersections
-        </label>
-      </div>
+      <Checkbox bind:checked={$controls.showIntersections}>
+        Show intersections
+      </Checkbox>
 
-      <div class="form-check">
-        <label class="form-check-label">
-          <input
-            class="form-check-input"
-            type="checkbox"
-            bind:checked={$controls.showBuildings}
-          />
-          Show building centroids
-        </label>
-      </div>
+      <Checkbox bind:checked={$controls.showBuildings}>
+        Show building centroids
+      </Checkbox>
 
       <hr />
 
@@ -71,27 +48,11 @@
         itemsPerRow={2}
       />
 
-      <div class="form-check">
-        <label class="form-check-label">
-          <input
-            class="form-check-input"
-            type="checkbox"
-            bind:checked={$controls.showFaces}
-          />
-          Show faces
-        </label>
-      </div>
+      <Checkbox bind:checked={$controls.showFaces}>Show faces</Checkbox>
 
-      <div class="form-check">
-        <label class="form-check-label">
-          <input
-            class="form-check-input"
-            type="checkbox"
-            bind:checked={$controls.showUrbanBlocks}
-          />
-          Show urban blocks
-        </label>
-      </div>
+      <Checkbox bind:checked={$controls.showUrbanBlocks}>
+        Show urban blocks
+      </Checkbox>
 
       <hr />
 
