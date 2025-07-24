@@ -5,7 +5,6 @@
   import { PolygonToolLayer } from "maplibre-draw-polygon";
   import { onMount } from "svelte";
   import { backend } from "./";
-  import "@picocss/pico/css/pico.jade.min.css";
   import type { Map } from "maplibre-gl";
   import { bbox } from "svelte-utils/map";
   import { OverpassSelector } from "svelte-utils/overpass";
@@ -121,7 +120,7 @@
 
     {#if $backend}
       <div>
-        <button class="secondary" on:click={() => ($backend = null)}>
+        <button on:click={() => ($backend = null)}>
           Load another area
         </button>
       </div>
@@ -179,7 +178,7 @@
       {/if}
 
       <Control position="bottom-left">
-        <button type="button" class="outline" on:click={swapBasemap}>
+        <button type="button" on:click={swapBasemap}>
           <i class="fa-solid fa-layer-group"></i>
           Basemap
         </button>

@@ -92,7 +92,7 @@
 <svelte:window on:keydown={keyDown} />
 
 <div>
-  <button class="secondary" on:click={undo} disabled={undoCount == 0}>
+  <button on:click={undo} disabled={undoCount == 0}>
     Undo ({undoCount})
   </button>
 </div>
@@ -102,7 +102,7 @@
 
 {#if $tool == "explore"}
   <p>Just pan around the map</p>
-  <button class="outline" on:click={doAllSimplifications}>
+  <button on:click={doAllSimplifications}>
     Do all simplifications
   </button>
 {:else if $tool == "collapseToCentroid"}
@@ -111,7 +111,6 @@
   <p>Click to collapse a dual carriageway</p>
 
   <button
-    class="outline"
     on:click={() => doBulkEdit((b) => b.fixAllDualCarriageways())}
   >
     Collapse all DCs
@@ -129,40 +128,36 @@
   {/if}
 {:else if $tool == "sidepath"}
   <button
-    class="outline"
     on:click={() => doBulkEdit((b) => b.mergeAllSidepaths())}
   >
     Merge all sidepaths
   </button>
 
   <button
-    class="outline"
     on:click={() => doBulkEdit((b) => b.removeAllFootways())}
   >
     Destructively remove all footways
   </button>
 
-  <button class="outline" on:click={downloadRoads}>
+  <button on:click={downloadRoads}>
     Download GJ of motorized and nonmotorized roads
   </button>
 {:else if $tool == "dogleg"}
   <p>Click a dog-leg edge to collapse it</p>
 
-  <button class="outline" on:click={() => doBulkEdit((b) => b.fixAllDogLegs())}>
+  <button on:click={() => doBulkEdit((b) => b.fixAllDogLegs())}>
     Collapse all dog-leg intersections
   </button>
 {:else if $tool == "clean"}
   <p>Click an edge or degenerate intersection to collapse it</p>
 
   <button
-    class="outline"
     on:click={() => doBulkEdit((b) => b.removeAllServiceRoads())}
   >
     Remove all service roads
   </button>
 
   <button
-    class="outline"
     on:click={() => doBulkEdit((b) => b.collapseAllDegenerateIntersections())}
   >
     Collapse all degenerate intersections
@@ -170,7 +165,7 @@
 {:else if $tool == "width"}
   <p>Hover on an edge to measure its width</p>
 
-  <button class="outline" on:click={getAllRoadWidths}>
+  <button on:click={getAllRoadWidths}>
     Get all road widths
   </button>
 {/if}

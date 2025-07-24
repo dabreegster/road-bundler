@@ -29,7 +29,6 @@
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.0.0",
-    "@picocss/pico": "^2.0.6",
     "svelte-maplibre": "^0.9.14",
     "svelte-utils": "github:a-b-street/svelte-utils"
   }
