@@ -11,78 +11,110 @@
 <div>
   <details open>
     <summary>Layers</summary>
-    <label>
-      <u>S</u>
-      how original OSM
-      <input
-        type="checkbox"
-        role="switch"
-        bind:checked={$controls.showSimplified}
+    <div class="fs-6">
+      <div class="form-check form-switch">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          role="switch"
+          id="showSimplified"
+          bind:checked={$controls.showSimplified}
+        />
+        <label class="form-check-label" for="showSimplified">
+          <kbd>S</kbd>
+          how simplified graph
+        </label>
+      </div>
+
+      <div class="form-check">
+        <label class="form-check-label">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            bind:checked={$controls.showEdges}
+          />
+          Show edges
+        </label>
+      </div>
+
+      <div class="form-check">
+        <label class="form-check-label">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            bind:checked={$controls.showIntersections}
+          />
+          Show intersections
+        </label>
+      </div>
+
+      <div class="form-check">
+        <label class="form-check-label">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            bind:checked={$controls.showBuildings}
+          />
+          Show building centroids
+        </label>
+      </div>
+
+      <hr />
+
+      <QualitativeLegend
+        labelColors={{
+          "urban block": colors.UrbanBlock,
+          "road artifact": colors.RoadArtifact,
+          "sidepath artifact": colors.SidepathArtifact,
+          "other area": colors.OtherArea,
+        }}
+        itemsPerRow={2}
       />
-      <u>S</u>
-      how simplified graph
-    </label>
 
-    <br />
+      <div class="form-check">
+        <label class="form-check-label">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            bind:checked={$controls.showFaces}
+          />
+          Show faces
+        </label>
+      </div>
 
-    <label>
-      <input type="checkbox" bind:checked={$controls.showEdges} />
-      Show edges
-    </label>
+      <div class="form-check">
+        <label class="form-check-label">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            bind:checked={$controls.showUrbanBlocks}
+          />
+          Show urban blocks
+        </label>
+      </div>
 
-    <label>
-      <input type="checkbox" bind:checked={$controls.showIntersections} />
-      Show intersections
-    </label>
+      <hr />
 
-    <label>
-      <input type="checkbox" bind:checked={$controls.showBuildings} />
-      Show building centroids
-    </label>
-
-    <hr />
-
-    <QualitativeLegend
-      labelColors={{
-        "urban block": colors.UrbanBlock,
-        "road artifact": colors.RoadArtifact,
-        "sidepath artifact": colors.SidepathArtifact,
-        "other area": colors.OtherArea,
-      }}
-      itemsPerRow={3}
-    />
-
-    <label>
-      <input type="checkbox" bind:checked={$controls.showFaces} />
-      Show faces
-    </label>
-
-    <label>
-      <input type="checkbox" bind:checked={$controls.showUrbanBlocks} />
-      Show urban blocks
-    </label>
-
-    <hr />
-
-    <QualitativeLegend
-      labelColors={{
-        ...colors.edges,
-        Intersection: colors.Intersection,
-      }}
-      itemsPerRow={2}
-    />
-
-    <hr />
-
-    {#if $tool == "width"}
-      <SequentialLegend
-        colorScale={widthColorScale}
-        labels={{ limits: widthLimits }}
+      <QualitativeLegend
+        labelColors={{
+          ...colors.edges,
+          Intersection: colors.Intersection,
+        }}
+        itemsPerRow={1}
       />
-    {/if}
 
-    <DebuggerLegend data={debuggedFace} />
-    <DebuggerLegend data={debuggedEdge} />
+      <hr />
+
+      {#if $tool == "width"}
+        <SequentialLegend
+          colorScale={widthColorScale}
+          labels={{ limits: widthLimits }}
+        />
+      {/if}
+
+      <DebuggerLegend data={debuggedFace} />
+      <DebuggerLegend data={debuggedEdge} />
+    </div>
   </details>
 </div>
 

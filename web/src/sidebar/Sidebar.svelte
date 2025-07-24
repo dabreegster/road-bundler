@@ -92,7 +92,7 @@
 <svelte:window on:keydown={keyDown} />
 
 <div>
-  <button on:click={undo} disabled={undoCount == 0}>
+  <button class="btn btn-outline" on:click={undo} disabled={undoCount == 0}>
     Undo ({undoCount})
   </button>
 </div>
@@ -102,7 +102,7 @@
 
 {#if $tool == "explore"}
   <p>Just pan around the map</p>
-  <button on:click={doAllSimplifications}>
+  <button class="btn btn-secondary" on:click={doAllSimplifications}>
     Do all simplifications
   </button>
 {:else if $tool == "collapseToCentroid"}
@@ -111,6 +111,7 @@
   <p>Click to collapse a dual carriageway</p>
 
   <button
+    class="btn btn-secondary"
     on:click={() => doBulkEdit((b) => b.fixAllDualCarriageways())}
   >
     Collapse all DCs
@@ -127,45 +128,62 @@
     {/if}
   {/if}
 {:else if $tool == "sidepath"}
-  <button
-    on:click={() => doBulkEdit((b) => b.mergeAllSidepaths())}
-  >
-    Merge all sidepaths
-  </button>
+  <div class="mb-1">
+    <button
+      class="btn btn-secondary"
+      on:click={() => doBulkEdit((b) => b.mergeAllSidepaths())}
+    >
+      Merge all sidepaths
+    </button>
+  </div>
 
-  <button
-    on:click={() => doBulkEdit((b) => b.removeAllFootways())}
-  >
-    Destructively remove all footways
-  </button>
+  <div class="mb-1">
+    <button
+      class="btn btn-secondary"
+      on:click={() => doBulkEdit((b) => b.removeAllFootways())}
+    >
+      Destructively remove all footways
+    </button>
+  </div>
 
-  <button on:click={downloadRoads}>
-    Download GJ of motorized and nonmotorized roads
-  </button>
+  <div class="mb-1">
+    <button class="btn btn-secondary" on:click={downloadRoads}>
+      Download GJ of motorized and nonmotorized roads
+    </button>
+  </div>
 {:else if $tool == "dogleg"}
   <p>Click a dog-leg edge to collapse it</p>
 
-  <button on:click={() => doBulkEdit((b) => b.fixAllDogLegs())}>
+  <button
+    class="btn btn-secondary"
+    on:click={() => doBulkEdit((b) => b.fixAllDogLegs())}
+  >
     Collapse all dog-leg intersections
   </button>
 {:else if $tool == "clean"}
   <p>Click an edge or degenerate intersection to collapse it</p>
 
-  <button
-    on:click={() => doBulkEdit((b) => b.removeAllServiceRoads())}
-  >
-    Remove all service roads
-  </button>
+  <div class="mb-1">
+    <button
+      class="btn btn-secondary"
+      on:click={() => doBulkEdit((b) => b.removeAllServiceRoads())}
+    >
+      Remove all service roads
+    </button>
+  </div>
 
-  <button
-    on:click={() => doBulkEdit((b) => b.collapseAllDegenerateIntersections())}
-  >
-    Collapse all degenerate intersections
-  </button>
+  <div>
+    <button
+      class="btn btn-secondary"
+      on:click={() => doBulkEdit((b) => b.collapseAllDegenerateIntersections())}
+    >
+      Collapse all degenerate intersections
+    </button>
+  </div>
 {:else if $tool == "width"}
   <p>Hover on an edge to measure its width</p>
 
-  <button on:click={getAllRoadWidths}>
+  <button class="btn btn-secondary" on:click={getAllRoadWidths}>
     Get all road widths
   </button>
 {/if}

@@ -1,7 +1,8 @@
 <script lang="ts">
+  import "bootstrap/dist/css/bootstrap.min.css";
   import "@fortawesome/fontawesome-free/css/all.min.css";
   import favicon from "../assets/favicon.ico?url";
-  import { MapLibre, Control } from "svelte-maplibre";
+  import { MapLibre } from "svelte-maplibre";
   import { PolygonToolLayer } from "maplibre-draw-polygon";
   import { onMount } from "svelte";
   import { backend } from "./";
@@ -86,16 +87,6 @@
     });
   }
 
-  let basemap: "osm" | "dataviz" = "dataviz";
-  let basemaps = {
-    osm: "https://api.maptiler.com/maps/openstreetmap/style.json?key=MZEJTanw3WpxRvt7qDfo",
-    dataviz:
-      "https://api.maptiler.com/maps/dataviz/style.json?key=MZEJTanw3WpxRvt7qDfo",
-  };
-  function swapBasemap() {
-    basemap = basemap == "osm" ? "dataviz" : "osm";
-  }
-
   let sidebarDiv: HTMLDivElement;
   let mapDiv: HTMLDivElement;
   $: if (sidebarDiv && $sidebarContents) {
@@ -120,7 +111,7 @@
 
     {#if $backend}
       <div>
-        <button on:click={() => ($backend = null)}>
+        <button class="btn btn-secondary" on:click={() => ($backend = null)}>
           Load another area
         </button>
       </div>
@@ -160,7 +151,7 @@
 
   <div slot="main" style="position:relative; width: 100%; height: 100vh;">
     <MapLibre
-      style={basemaps[basemap]}
+      style="https://api.maptiler.com/maps/dataviz/style.json?key=MZEJTanw3WpxRvt7qDfo"
       standardControls
       hash
       bind:map
@@ -176,13 +167,6 @@
       {:else}
         <PolygonToolLayer />
       {/if}
-
-      <Control position="bottom-left">
-        <button type="button" on:click={swapBasemap}>
-          <i class="fa-solid fa-layer-group"></i>
-          Basemap
-        </button>
-      </Control>
     </MapLibre>
   </div>
 </Layout>

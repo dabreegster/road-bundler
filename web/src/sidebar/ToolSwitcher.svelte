@@ -32,9 +32,10 @@
 
 <svelte:window on:keydown={keyDown} />
 
-<div>
+<div class="mb-3">
   {#each tools as [value, label, icon]}
     <button
+      class="btn btn-primary"
       on:click={() => ($tool = value)}
       disabled={$tool == value}
       title={label}
