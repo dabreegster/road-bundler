@@ -1,5 +1,13 @@
 <script lang="ts">
-  import { widthLimits, widthColorScale, tool, colors, controls } from "./";
+  import {
+    poiLimits,
+    poiColorScale,
+    widthLimits,
+    widthColorScale,
+    tool,
+    colors,
+    controls,
+  } from "./";
   import { Checkbox, SequentialLegend, QualitativeLegend } from "svelte-utils";
   import DebuggerLegend from "./DebuggerLegend.svelte";
   import type { FeatureCollection } from "geojson";
@@ -38,15 +46,22 @@
 
       <hr />
 
-      <QualitativeLegend
-        labelColors={{
-          "urban block": colors.UrbanBlock,
-          "road artifact": colors.RoadArtifact,
-          "sidepath artifact": colors.SidepathArtifact,
-          "other area": colors.OtherArea,
-        }}
-        itemsPerRow={2}
-      />
+      {#if $tool == "poi"}
+        <SequentialLegend
+          colorScale={poiColorScale}
+          labels={{ limits: poiLimits }}
+        />
+      {:else}
+        <QualitativeLegend
+          labelColors={{
+            "urban block": colors.UrbanBlock,
+            "road artifact": colors.RoadArtifact,
+            "sidepath artifact": colors.SidepathArtifact,
+            "other area": colors.OtherArea,
+          }}
+          itemsPerRow={2}
+        />
+      {/if}
 
       <Checkbox bind:checked={$controls.showFaces}>Show faces</Checkbox>
 
@@ -56,15 +71,17 @@
 
       <hr />
 
-      <QualitativeLegend
-        labelColors={{
-          ...colors.edges,
-          Intersection: colors.Intersection,
-        }}
-        itemsPerRow={1}
-      />
+      {#if $tool != "poi"}
+        <QualitativeLegend
+          labelColors={{
+            ...colors.edges,
+            Intersection: colors.Intersection,
+          }}
+          itemsPerRow={1}
+        />
 
-      <hr />
+        <hr />
+      {/if}
 
       {#if $tool == "width"}
         <SequentialLegend

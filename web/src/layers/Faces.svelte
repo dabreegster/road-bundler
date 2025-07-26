@@ -1,6 +1,14 @@
 <script lang="ts">
   import type { Feature, FeatureCollection, Polygon } from "geojson";
-  import { backend, colors, controls, tool, type FaceProps } from "../";
+  import {
+    backend,
+    colors,
+    poiLimits,
+    poiColorScale,
+    controls,
+    tool,
+    type FaceProps,
+  } from "../";
   import {
     GeoJSON,
     FillLayer,
@@ -9,7 +17,7 @@
   } from "svelte-maplibre";
   import type { ExpressionSpecification } from "maplibre-gl";
   import ListAmenities from "./ListAmenities.svelte";
-  import { emptyGeojson, Popup } from "svelte-utils/map";
+  import { makeRamp, emptyGeojson, Popup } from "svelte-utils/map";
 
   export let faces: FeatureCollection<Polygon, FaceProps>;
   export let hoveredFace: Feature<Polygon, FaceProps> | null;
@@ -97,7 +105,10 @@
       ? undefined
       : ["!=", ["get", "kind"], "UrbanBlock"]}
     paint={{
-      "fill-color": faceFillColor,
+      "fill-color":
+        $tool == "poi"
+          ? makeRamp(["length", ["get", "amenities"]], poiLimits, poiColorScale)
+          : faceFillColor,
       "fill-opacity": hoverStateFilter(0.2, 1),
     }}
     layout={{ visibility: $controls.showFaces ? "visible" : "none" }}

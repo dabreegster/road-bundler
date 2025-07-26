@@ -117,7 +117,11 @@ impl Amenity {
     }
 
     fn is_amenity(tags: &Tags) -> Option<String> {
-        // Allow everything for now
+        // Allow almost everything for now
+        if tags.is("shop", "vacant") {
+            return None;
+        }
+
         tags.get("amenity").or_else(|| tags.get("shop")).cloned()
     }
 }

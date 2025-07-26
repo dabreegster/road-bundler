@@ -116,3 +116,6 @@ export let widthColorScale = [
   "#980043",
 ];
 export let widthLimits = [0, 10, 20, 30, 40, 100];
+
+export let poiColorScale = widthColorScale;
+export let poiLimits = widthLimits;

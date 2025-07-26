@@ -4,6 +4,8 @@
     controls,
     tool,
     backend,
+    poiLimits,
+    poiColorScale,
     type OriginalGraph,
     type EdgeProps,
   } from "../";
@@ -15,7 +17,11 @@
   } from "svelte-maplibre";
   import type { Feature, FeatureCollection, LineString } from "geojson";
   import { Popup } from "svelte-utils/map";
-  import { constructMatchExpression, emptyGeojson } from "svelte-utils/map";
+  import {
+    makeRamp,
+    constructMatchExpression,
+    emptyGeojson,
+  } from "svelte-utils/map";
   import ListEdges from "./ListEdges.svelte";
   import ListAmenities from "./ListAmenities.svelte";
 
@@ -138,11 +144,14 @@
     eventsIfTopMost
     paint={{
       "line-width": hoverStateFilter(5, 8),
-      "line-color": constructMatchExpression(
-        ["get", "simple_kind"],
-        colors.edges,
-        "red",
-      ),
+      "line-color":
+        $tool == "poi"
+          ? makeRamp(["length", ["get", "amenities"]], poiLimits, poiColorScale)
+          : constructMatchExpression(
+              ["get", "simple_kind"],
+              colors.edges,
+              "red",
+            ),
       "line-opacity": $controls.showSimplified ? 1 : 0.5,
     }}
     layout={{ visibility: $controls.showEdges ? "visible" : "none" }}
