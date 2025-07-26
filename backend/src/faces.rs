@@ -11,8 +11,8 @@ use rstar::{primitives::GeomWithData, RTree, AABB};
 
 use crate::geo_helpers::SliceNearEndpoints;
 use crate::{
-    Areas, Debugger, EdgeID, EdgeKind, Graph, Intersection, IntersectionID, IntersectionProvenance,
-    RoadBundler,
+    Amenities, AmenityID, Areas, Debugger, EdgeID, EdgeKind, Graph, Intersection, IntersectionID,
+    IntersectionProvenance, RoadBundler,
 };
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
@@ -24,6 +24,7 @@ pub struct Face {
     pub boundary_edges: Vec<EdgeID>,
     pub boundary_intersections: Vec<IntersectionID>,
     pub connecting_edges: Vec<EdgeID>,
+    pub amenities: Vec<AmenityID>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -39,7 +40,28 @@ pub enum FaceKind {
     OtherArea,
 }
 
-pub fn make_faces(graph: &Graph, areas: &Areas) -> BTreeMap<FaceID, Face> {
+/// Also fills out Edge.amenities
+pub fn make_faces(
+    graph: &mut Graph,
+    areas: &Areas,
+    amenities: &Amenities,
+) -> BTreeMap<FaceID, Face> {
+    info!("Building rtree for {} edges", graph.edges.len());
+    let closest_edge = RTree::bulk_load(
+        graph
+            .edges
+            .values()
+            .map(|e| GeomWithData::new(e.linestring.clone(), e.id))
+            .collect(),
+    );
+
+    info!("Matching {} amenities to edges", amenities.amenities.len());
+    for a in &amenities.amenities {
+        if let Some(e) = closest_edge.nearest_neighbor(&a.point) {
+            graph.edges.get_mut(&e.data).unwrap().amenities.push(a.id);
+        }
+    }
+
     info!("Splitting {} edges into faces", graph.edges.len());
     let polygons = split_polygon(
         &graph.boundary_polygon,
@@ -51,16 +73,7 @@ pub fn make_faces(graph: &Graph, areas: &Areas) -> BTreeMap<FaceID, Face> {
         ),
     );
 
-    info!("Building rtree for {} edges", graph.edges.len());
-    let closest_edge = RTree::bulk_load(
-        graph
-            .edges
-            .values()
-            .map(|e| GeomWithData::new(e.linestring.clone(), e.id))
-            .collect(),
-    );
-
-    info!("Matching {} faces with edges", polygons.len());
+    info!("Matching {} faces with edges and amenities", polygons.len());
     let mut faces = BTreeMap::new();
     for polygon in polygons {
         let bbox = aabb(&polygon);
@@ -114,6 +127,18 @@ pub fn make_faces(graph: &Graph, areas: &Areas) -> BTreeMap<FaceID, Face> {
             FaceKind::RoadArtifact
         };
 
+        let matching_amenities = amenities
+            .rtree
+            .locate_in_envelope_intersecting(&bbox)
+            .filter_map(|obj| {
+                if polygon.contains(obj.geom()) {
+                    Some(obj.data)
+                } else {
+                    None
+                }
+            })
+            .collect();
+
         let id = FaceID(faces.len());
         faces.insert(
             id,
@@ -123,6 +148,7 @@ pub fn make_faces(graph: &Graph, areas: &Areas) -> BTreeMap<FaceID, Face> {
                 boundary_edges,
                 boundary_intersections,
                 connecting_edges,
+                amenities: matching_amenities,
             },
         );
     }

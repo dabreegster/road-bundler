@@ -5,7 +5,7 @@ use osm_reader::{NodeID, WayID};
 use serde::Serialize;
 use utils::{Mercator, Tags};
 
-use crate::EdgeKind;
+use crate::{AmenityID, EdgeKind};
 
 #[derive(Clone)]
 pub struct Graph {
@@ -35,6 +35,7 @@ pub struct Edge {
     pub dst: IntersectionID,
     pub linestring: LineString,
     pub kind: EdgeKind,
+    pub amenities: Vec<AmenityID>,
 }
 
 #[derive(Clone, Serialize)]
@@ -94,6 +95,8 @@ impl Graph {
                             dst: e.dst.into(),
                             linestring: e.linestring,
                             kind: EdgeKind::initially_classify(e.id, &e.osm_tags),
+                            // Filled out later
+                            amenities: Vec::new(),
                         },
                     )
                 })
@@ -167,7 +170,7 @@ impl Graph {
         }
     }
 
-    /// Trusts the linestring to go from `src` to `dst`
+    /// Trusts the linestring to go from `src` to `dst`. Does NOT update amenities.
     pub fn create_new_edge(
         &mut self,
         linestring: LineString,
@@ -184,6 +187,8 @@ impl Graph {
                 dst,
                 linestring,
                 kind,
+                // TODO Redo nearest neighbor and update other places
+                amenities: Vec::new(),
             },
         );
         self.intersections.get_mut(&src).unwrap().edges.push(id);

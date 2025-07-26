@@ -14,12 +14,14 @@ use geojson::GeoJson;
 use utils::Tags;
 use wasm_bindgen::prelude::*;
 
+use crate::amenities::{Amenities, AmenityID};
 use crate::areas::Areas;
 use crate::debugger::Debugger;
 use crate::faces::{make_faces, Face, FaceID, FaceKind};
 use crate::graph::{EdgeID, Graph, Intersection, IntersectionID, IntersectionProvenance};
 use crate::kinds::EdgeKind;
 
+mod amenities;
 mod areas;
 mod clean;
 mod debugger;
@@ -39,6 +41,7 @@ static START: Once = Once::new();
 pub struct RoadBundler {
     original_graph: Graph,
     areas: Areas,
+    amenities: Amenities,
     commands: Vec<Command>,
 
     // Derived
@@ -60,14 +63,15 @@ impl RoadBundler {
         let mut osm_graph =
             utils::osm2graph::Graph::new(input_bytes, keep_edge, &mut areas).map_err(err_to_js)?;
         osm_graph.compact_ids();
-        let graph = Graph::new(osm_graph);
+        let mut graph = Graph::new(osm_graph);
 
-        let areas = areas.finalize(&graph.mercator);
+        let (areas, amenities) = areas.finalize(&graph.mercator);
 
-        let faces = make_faces(&graph, &areas);
+        let faces = make_faces(&mut graph, &areas, &amenities);
         Ok(Self {
             original_graph: graph.clone(),
             areas,
+            amenities,
             commands: Vec::new(),
 
             graph,
@@ -157,7 +161,7 @@ impl RoadBundler {
     pub fn undo(&mut self) {
         self.commands.pop();
         self.graph = self.original_graph.clone();
-        self.faces = make_faces(&self.graph, &self.areas);
+        self.faces = make_faces(&mut self.graph, &self.areas, &self.amenities);
 
         for cmd in self.commands.clone() {
             self.apply_cmd(cmd);
@@ -261,7 +265,7 @@ impl RoadBundler {
                 .push(Command::CollapseDegenerateIntersection(*id));
             self.collapse_degenerate_intersection(*id);
         }
-        self.faces = make_faces(&self.graph, &self.areas);
+        self.faces = make_faces(&mut self.graph, &self.areas, &self.amenities);
 
         to_merge.len()
     }
@@ -310,7 +314,7 @@ impl RoadBundler {
             Command::RemoveEdge(edge) => self.remove_edge(edge),
             Command::CollapseDegenerateIntersection(i) => self.collapse_degenerate_intersection(i),
         }
-        self.faces = make_faces(&self.graph, &self.areas);
+        self.faces = make_faces(&mut self.graph, &self.areas, &self.amenities);
     }
 }
 
