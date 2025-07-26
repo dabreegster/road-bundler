@@ -288,7 +288,7 @@ impl RoadBundler {
 }
 
 impl Face {
-    pub fn to_gj(&self, graph: &Graph, id: FaceID) -> Feature {
+    pub fn to_gj(&self, graph: &Graph, amenities: &Amenities, id: FaceID) -> Feature {
         let mut debug_hover = Debugger::new(graph.mercator.clone());
         for e in &self.boundary_edges {
             debug_hover.line(&graph.edges[e].linestring, "boundary edge", "red", 5, 1.0);
@@ -315,6 +315,17 @@ impl Face {
             Ok(gj) => f.set_property("sidepath", serde_json::to_value(&gj).unwrap()),
             Err(err) => f.set_property("sidepath", err.to_string()),
         }
+        f.set_property(
+            "amenities",
+            serde_json::to_value(
+                &self
+                    .amenities
+                    .iter()
+                    .map(|id| amenities.amenities[id.0].clone())
+                    .collect::<Vec<_>>(),
+            )
+            .unwrap(),
+        );
         f
     }
 }

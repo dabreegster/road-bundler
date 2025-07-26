@@ -9,6 +9,7 @@
     ["dogleg", "Dog-leg", "fa-solid fa-dog"],
     ["clean", "Cleanup", "fa-solid fa-broom"],
     ["width", "Road width", "fa-solid fa-ruler-horizontal"],
+    ["poi", "Points of Interest", "fa-solid fa-bag-shopping"],
   ] as const;
 
   function keyDown(e: KeyboardEvent) {
@@ -26,6 +27,8 @@
       $tool = "clean";
     } else if (e.key == "7") {
       $tool = "width";
+    } else if (e.key == "8") {
+      $tool = "poi";
     }
   }
 </script>

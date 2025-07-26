@@ -186,4 +186,6 @@
   <button class="btn btn-secondary" on:click={getAllRoadWidths}>
     Get all road widths
   </button>
+{:else if $tool == "poi"}
+  <p>Click on an edge or face to understand its POIs</p>
 {/if}

@@ -8,7 +8,8 @@
     type LayerClickInfo,
   } from "svelte-maplibre";
   import type { ExpressionSpecification } from "maplibre-gl";
-  import { emptyGeojson } from "svelte-utils/map";
+  import ListAmenities from "./ListAmenities.svelte";
+  import { emptyGeojson, Popup } from "svelte-utils/map";
 
   export let faces: FeatureCollection<Polygon, FaceProps>;
   export let hoveredFace: Feature<Polygon, FaceProps> | null;
@@ -101,9 +102,17 @@
     }}
     layout={{ visibility: $controls.showFaces ? "visible" : "none" }}
     bind:hovered={tmpHoveredFace}
-    hoverCursor={["collapseToCentroid", "dualCarriageway"].includes($tool)
+    hoverCursor={["collapseToCentroid", "dualCarriageway", "poi"].includes(
+      $tool,
+    )
       ? "pointer"
       : undefined}
     on:click={clickFace}
-  />
+  >
+    {#if $tool == "poi"}
+      <Popup openOn="click" let:props>
+        <ListAmenities list={JSON.parse(props.amenities)} />
+      </Popup>
+    {/if}
+  </FillLayer>
 </GeoJSON>

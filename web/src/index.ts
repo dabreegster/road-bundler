@@ -28,6 +28,7 @@ export let tool: Writable<
   | "dogleg"
   | "clean"
   | "width"
+  | "poi"
 > = writable("explore");
 
 export interface FaceProps {
@@ -42,6 +43,7 @@ export interface FaceProps {
       }
     | string;
   sidepath: FeatureCollection | string;
+  amenities: Amenity[];
 }
 
 export interface EdgeProps {
@@ -66,10 +68,20 @@ export interface EdgeProps {
       };
   length: number;
   bearing: number;
+  amenities: Amenity[];
 }
 
 export interface IntersectionProps {
   intersection_id: number;
+}
+
+export interface Amenity {
+  id: number;
+  osm_id: { Node: number }; // TODO Not quite
+  point: [number, number];
+  kind: string;
+  name?: string;
+  brand?: string;
 }
 
 // TODO Lost some of the specifity here, boo

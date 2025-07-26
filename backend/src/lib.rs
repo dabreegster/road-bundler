@@ -92,6 +92,17 @@ impl RoadBundler {
                 "bearing",
                 geo_helpers::linestring_bearing(&edge.linestring).round(),
             );
+            f.set_property(
+                "amenities",
+                serde_json::to_value(
+                    &edge
+                        .amenities
+                        .iter()
+                        .map(|id| self.amenities.amenities[id.0].clone())
+                        .collect::<Vec<_>>(),
+                )
+                .map_err(err_to_js)?,
+            );
             features.push(f);
         }
         serde_json::to_string(&GeoJson::from(features)).map_err(err_to_js)
@@ -133,7 +144,7 @@ impl RoadBundler {
     pub fn get_faces(&self) -> Result<String, JsValue> {
         let mut features = Vec::new();
         for (id, face) in &self.faces {
-            features.push(face.to_gj(&self.graph, *id));
+            features.push(face.to_gj(&self.graph, &self.amenities, *id));
         }
         serde_json::to_string(&GeoJson::from(features)).map_err(err_to_js)
     }

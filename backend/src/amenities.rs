@@ -4,11 +4,13 @@ use geo::{Centroid, Coord, LineString, Point, Polygon};
 use geojson::Feature;
 use osm_reader::OsmID;
 use rstar::{primitives::GeomWithData, RTree};
+use serde::Serialize;
 use utils::{osm2graph::OsmReader, Mercator, Tags};
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord, Serialize)]
 pub struct AmenityID(pub usize);
 
+#[derive(Clone, Serialize)]
 pub struct Amenity {
     pub id: AmenityID,
     pub osm_id: OsmID,

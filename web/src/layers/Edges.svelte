@@ -17,6 +17,7 @@
   import { Popup } from "svelte-utils/map";
   import { constructMatchExpression, emptyGeojson } from "svelte-utils/map";
   import ListEdges from "./ListEdges.svelte";
+  import ListAmenities from "./ListAmenities.svelte";
 
   export let edges: FeatureCollection<LineString, EdgeProps>;
   export let afterMutation: (undoDiff: number) => void;
@@ -193,6 +194,8 @@
           ⬆
         </span>
       </p>
+
+      <ListAmenities list={JSON.parse(props.amenities)} />
     </Popup>
   </LineLayer>
 </GeoJSON>
