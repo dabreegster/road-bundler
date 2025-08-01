@@ -2,11 +2,9 @@
 
 mod average_lines;
 mod slice_nearest_boundary;
-mod step_along_line;
 
 pub use average_lines::average_linestrings;
 pub use slice_nearest_boundary::SliceNearEndpoints;
-pub use step_along_line::step_along_line;
 
 use geo::{Coord, Line, LineString};
 

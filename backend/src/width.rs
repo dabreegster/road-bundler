@@ -39,8 +39,7 @@ fn get_road_widths(bundler: &RoadBundler, e: EdgeID) -> Vec<LineString> {
     let step_size_meters = 10.0;
     let project_away_meters = 50.0;
 
-    let test_points =
-        crate::geo_helpers::step_along_line(&bundler.graph.edges[&e].linestring, step_size_meters);
+    let test_points = utils::step_along_line(&bundler.graph.edges[&e].linestring, step_size_meters);
     let mut output = Vec::new();
     for (pt, angle) in test_points {
         let mut test_lines = Vec::new();
