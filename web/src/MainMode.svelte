@@ -14,7 +14,13 @@
     type OriginalGraph,
   } from "./";
   import { SplitComponent } from "svelte-utils/two_column_layout";
-  import { GeoJSON, LineLayer, CircleLayer, Control } from "svelte-maplibre";
+  import {
+    GeoJSON,
+    FillLayer,
+    LineLayer,
+    CircleLayer,
+    Control,
+  } from "svelte-maplibre";
   import type {
     LineString,
     Feature,
@@ -102,23 +108,23 @@
     </GeoJSON>
 
     <GeoJSON data={allRoadWidths} generateId>
-      <LineLayer
+      <FillLayer
         id="road-widths"
         beforeId="edges"
         paint={{
-          "line-width": 30,
-          "line-color": makeRamp(
+          "fill-color": makeRamp(
             ["get", "min_width"],
             widthLimits,
             widthColorScale,
           ),
+          "fill-opacity": 0.8,
         }}
         layout={{ visibility: $tool == "width" ? "visible" : "none" }}
       >
         <Popup openOn="hover" let:props>
           {Math.round(props.min_width)} to {Math.round(props.max_width)}
         </Popup>
-      </LineLayer>
+      </FillLayer>
     </GeoJSON>
 
     {#if $backend}

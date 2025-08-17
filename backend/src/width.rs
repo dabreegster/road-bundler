@@ -1,5 +1,6 @@
 use anyhow::Result;
-use geo::{Coord, Euclidean, Length, Line, LineIntersection, LineString, Polygon};
+use geo::buffer::{BufferStyle, LineCap};
+use geo::{Buffer, Coord, Euclidean, Length, Line, LineIntersection, LineString, Polygon};
 use geojson::GeoJson;
 use rstar::{RTree, RTreeObject};
 
@@ -22,7 +23,10 @@ pub fn get_all_road_widths(bundler: &RoadBundler) -> Result<String> {
             widths.iter().min_by_key(round),
             widths.iter().max_by_key(round),
         ) {
-            let mut f = bundler.graph.mercator.to_wgs84_gj(&edge.linestring);
+            let buffered = edge
+                .linestring
+                .buffer_with_style(BufferStyle::new(*min / 2.0).line_cap(LineCap::Square));
+            let mut f = bundler.graph.mercator.to_wgs84_gj(&buffered);
             f.set_property("min_width", *min);
             f.set_property("max_width", *max);
             features.push(f);
