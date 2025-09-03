@@ -51,7 +51,7 @@ dependencies = [
  "anyhow",
  "console_error_panic_hook",
  "console_log",
- "geo 0.30.0 (git+https://github.com/georust/geo)",
+ "geo",
  "geojson",
  "i_overlay",
  "itertools 0.14.0",
@@ -226,25 +226,9 @@ checksum = "d9c4f5dac5e15c24eb999c26181a6ca40b39fe946cbe4c263c7209467bc83af2"
 
 [[package]]
 name = "geo"
-version = "0.30.0"
-source = "git+https://github.com/dabreegster/geo?branch=new_ioverlay#a843d0ed1335ef01421f2184bedb56a464efde7d"
-dependencies = [
- "earcutr",
- "float_next_after",
- "geo-types",
- "geographiclib-rs",
- "i_overlay",
- "log",
- "num-traits",
- "robust",
- "rstar",
- "spade",
-]
-
-[[package]]
-name = "geo"
-version = "0.30.0"
-source = "git+https://github.com/georust/geo#ea77d1ce6ae1c04e70f9d550bf8420486333dc78"
+version = "0.31.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2fc1a1678e54befc9b4bcab6cd43b8e7f834ae8ea121118b0fd8c42747675b4a"
 dependencies = [
  "earcutr",
  "float_next_after",
@@ -862,11 +846,11 @@ checksum = "5a5f39404a5da50712a4c1eecf25e90dd62b613502b7e925fd4e4d19b5c96512"
 [[package]]
 name = "utils"
 version = "0.1.0"
-source = "git+https://github.com/a-b-street/utils#52dcaca5307f23f40f5cbd1d1d460d9302953168"
+source = "git+https://github.com/a-b-street/utils#1c52f4e0dad1eeaa69b08850b5de404b72b8542b"
 dependencies = [
  "anyhow",
  "fast_paths",
- "geo 0.30.0 (git+https://github.com/dabreegster/geo?branch=new_ioverlay)",
+ "geo",
  "geo-types",
  "geojson",
  "log",
