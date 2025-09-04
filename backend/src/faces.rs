@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
+use geo::buffer::{BufferStyle, LineJoin};
 use geo::{
     BooleanOps, BoundingRect, Buffer, Centroid, Contains, Coord, Distance, Euclidean,
     InterpolatableLine, LineString, MultiLineString, Point, Polygon, Rect,
@@ -303,6 +304,40 @@ impl Face {
     }
 
     fn generated_sidewalks(&self, graph: &Graph) -> Debugger {
+        let mut debug = Debugger::new(graph.mercator.clone());
+        let width = 3.0;
+
+        let mut subtract = Vec::new();
+        // internal_edges isn't complete, so include all connecting_edges too. The ones that're
+        // outside this face won't matter; we're subtracting anyway.
+        for e in self
+            .boundary_edges
+            .iter()
+            .chain(self.connecting_edges.iter())
+            .chain(self.internal_edges.iter())
+        {
+            subtract.push(graph.edges[e].linestring.clone());
+        }
+        // Buffer these all in one batch; it's much cleaner
+        let subtract_polygons = MultiLineString(subtract)
+            .buffer_with_style(BufferStyle::new(width).line_join(LineJoin::Round(width)));
+
+        let combo = self.polygon.difference(&subtract_polygons);
+        for polygon in combo {
+            //debug.polygon(&polygon, "generated sidewalk", "green", 0.8);
+            debug.line(polygon.exterior(), "generated sidewalk", "green", 2, 1.0);
+        }
+
+        /*for polygon in subtract_polygons {
+            debug.polygon(&polygon, "subtract", "red", 0.8);
+        }*/
+
+        debug
+    }
+
+    // This first negative-buffers the face, then subtracts internal stuff. No real advantage?
+    #[allow(unused)]
+    fn generated_sidewalks_alt(&self, graph: &Graph) -> Debugger {
         let mut debug = Debugger::new(graph.mercator.clone());
         let width = 3.0;
 
