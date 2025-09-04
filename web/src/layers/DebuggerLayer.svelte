@@ -14,7 +14,7 @@
     filter={isPolygon}
     paint={{
       "fill-color": ["get", "color"],
-      "fill-opacity": 0.8,
+      "fill-opacity": ["get", "opacity"],
     }}
   />
 

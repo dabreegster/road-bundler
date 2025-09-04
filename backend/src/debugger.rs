@@ -34,10 +34,11 @@ impl Debugger {
     }
 
     #[allow(unused)]
-    pub fn polygon(&mut self, polygon: &Polygon, label: &str, color: &str) {
+    pub fn polygon(&mut self, polygon: &Polygon, label: &str, color: &str, opacity: f64) {
         let mut f = self.mercator.to_wgs84_gj(polygon);
         f.set_property("label", label);
         f.set_property("color", color);
+        f.set_property("opacity", opacity);
         self.features.push(f);
     }
 
