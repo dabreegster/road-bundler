@@ -56,13 +56,16 @@
 
       <hr />
 
-      <QualitativeLegend
-        labelColors={{
-          ...colors.edges,
-          Intersection: colors.Intersection,
-        }}
-        itemsPerRow={1}
-      />
+      <details>
+        <summary>Edges and intersections</summary>
+        <QualitativeLegend
+          labelColors={{
+            ...colors.edges,
+            Intersection: colors.Intersection,
+          }}
+          itemsPerRow={1}
+        />
+      </details>
 
       <hr />
 

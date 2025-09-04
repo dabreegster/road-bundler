@@ -24,6 +24,8 @@ pub struct Face {
     pub boundary_edges: Vec<EdgeID>,
     pub boundary_intersections: Vec<IntersectionID>,
     pub connecting_edges: Vec<EdgeID>,
+    // TODO Some connecting_edges also belong in here, but not detecting yet
+    pub internal_edges: Vec<EdgeID>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -65,16 +67,16 @@ pub fn make_faces(graph: &Graph, areas: &Areas) -> BTreeMap<FaceID, Face> {
     for polygon in polygons {
         let bbox = aabb(&polygon);
 
-        let boundary_edges = closest_edge
-            .locate_in_envelope_intersecting(&bbox)
-            .filter_map(|obj| {
-                if linestring_along_polygon(obj.geom(), &polygon) {
-                    Some(obj.data)
-                } else {
-                    None
-                }
-            })
-            .collect();
+        let mut boundary_edges = Vec::new();
+        let mut internal_edges = Vec::new();
+        for obj in closest_edge.locate_in_envelope_intersecting(&bbox) {
+            if linestring_along_polygon(obj.geom(), &polygon) {
+                boundary_edges.push(obj.data);
+            } else if polygon.contains(obj.geom()) {
+                internal_edges.push(obj.data);
+            }
+        }
+
         let (boundary_intersections, connecting_edges) = find_connections(graph, &boundary_edges);
         let num_buildings = areas
             .building_centroids
@@ -123,6 +125,7 @@ pub fn make_faces(graph: &Graph, areas: &Areas) -> BTreeMap<FaceID, Face> {
                 boundary_edges,
                 boundary_intersections,
                 connecting_edges,
+                internal_edges,
             },
         );
     }
@@ -275,6 +278,9 @@ impl Face {
                 5,
                 1.0,
             );
+        }
+        for e in &self.internal_edges {
+            debug_hover.line(&graph.edges[e].linestring, "internal edge", "blue", 5, 1.0);
         }
 
         let mut f = graph.mercator.to_wgs84_gj(&self.polygon);
