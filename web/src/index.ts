@@ -28,6 +28,7 @@ export let tool: Writable<
   | "dogleg"
   | "clean"
   | "width"
+  | "sidewalker"
 > = writable("explore");
 
 export interface FaceProps {
@@ -42,6 +43,7 @@ export interface FaceProps {
       }
     | string;
   sidepath: FeatureCollection | string;
+  generated_sidewalks: FeatureCollection;
 }
 
 export interface EdgeProps {

@@ -59,7 +59,10 @@
       typeof hoveredFace.properties.sidepath != "string"
     ) {
       return hoveredFace.properties.sidepath;
+    } else if (tool == "sidewalker") {
+      return hoveredFace.properties.generated_sidewalks;
     }
+
     return emptyGeojson();
   }
 
@@ -97,7 +100,10 @@
       : ["!=", ["get", "kind"], "UrbanBlock"]}
     paint={{
       "fill-color": faceFillColor,
-      "fill-opacity": hoverStateFilter(0.2, 1),
+      "fill-opacity":
+        $tool == "sidewalker"
+          ? hoverStateFilter(0.2, 0)
+          : hoverStateFilter(0.2, 1),
     }}
     layout={{ visibility: $controls.showFaces ? "visible" : "none" }}
     bind:hovered={tmpHoveredFace}

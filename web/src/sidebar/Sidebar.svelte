@@ -186,4 +186,6 @@
   <button class="btn btn-secondary" on:click={getAllRoadWidths}>
     Get all road widths
   </button>
+{:else if $tool == "sidewalker"}
+  <p>Hover a face to show shrunken polygon</p>
 {/if}

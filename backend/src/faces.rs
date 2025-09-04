@@ -1,8 +1,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use geo::{
-    BoundingRect, Centroid, Contains, Coord, Distance, Euclidean, InterpolatableLine, LineString,
-    Point, Polygon, Rect,
+    BoundingRect, Buffer, Centroid, Contains, Coord, Distance, Euclidean, InterpolatableLine,
+    LineString, Point, Polygon, Rect,
 };
 use geojson::Feature;
 use i_overlay::core::fill_rule::FillRule;
@@ -289,7 +289,21 @@ impl Face {
             Ok(gj) => f.set_property("sidepath", serde_json::to_value(&gj).unwrap()),
             Err(err) => f.set_property("sidepath", err.to_string()),
         }
+        f.set_property(
+            "generated_sidewalks",
+            self.generated_sidewalks(graph).build(),
+        );
         f
+    }
+
+    fn generated_sidewalks(&self, graph: &Graph) -> Debugger {
+        let mut debug = Debugger::new(graph.mercator.clone());
+
+        for polygon in self.polygon.buffer(-3.0) {
+            debug.line(polygon.exterior(), "generated sidewalk", "green", 2, 1.0);
+        }
+
+        debug
     }
 }
 

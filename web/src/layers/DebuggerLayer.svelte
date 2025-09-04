@@ -1,13 +1,33 @@
 <script lang="ts">
-  import { CircleLayer, GeoJSON, LineLayer } from "svelte-maplibre";
+  import { CircleLayer, GeoJSON, LineLayer, FillLayer } from "svelte-maplibre";
   import type { FeatureCollection } from "geojson";
-  import { isPoint, isLine } from "svelte-utils/map";
+  import { isPoint, isLine, isPolygon } from "svelte-utils/map";
 
   export let name: string;
   export let data: FeatureCollection;
 </script>
 
 <GeoJSON {data}>
+  <FillLayer
+    id={`debug-${name}-polygon-fill`}
+    beforeId="Road labels"
+    filter={isPolygon}
+    paint={{
+      "fill-color": ["get", "color"],
+      "fill-opacity": 0.8,
+    }}
+  />
+
+  <LineLayer
+    id={`debug-${name}-polygon-outline`}
+    beforeId="Road labels"
+    filter={isPolygon}
+    paint={{
+      "line-width": 2,
+      "line-color": "black",
+    }}
+  />
+
   <LineLayer
     id={`debug-${name}-lines`}
     beforeId="Road labels"

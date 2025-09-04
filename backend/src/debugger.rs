@@ -1,4 +1,4 @@
-use geo::{LineString, Point};
+use geo::{LineString, Point, Polygon};
 use geojson::{Feature, GeoJson};
 use utils::Mercator;
 
@@ -30,6 +30,14 @@ impl Debugger {
         f.set_property("label", label);
         f.set_property("color", color);
         f.set_property("radius", radius);
+        self.features.push(f);
+    }
+
+    #[allow(unused)]
+    pub fn polygon(&mut self, polygon: &Polygon, label: &str, color: &str) {
+        let mut f = self.mercator.to_wgs84_gj(polygon);
+        f.set_property("label", label);
+        f.set_property("color", color);
         self.features.push(f);
     }
 
