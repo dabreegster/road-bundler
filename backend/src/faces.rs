@@ -2,12 +2,12 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use geo::buffer::{BufferStyle, LineJoin};
 use geo::{
-    BooleanOps, BoundingRect, Buffer, Centroid, Contains, Distance, Euclidean, InterpolatableLine,
-    LineString, MultiLineString, Point, Polygon, Rect,
+    BooleanOps, Buffer, Centroid, Contains, Distance, Euclidean, InterpolatableLine, LineString,
+    MultiLineString, Polygon,
 };
 use geojson::Feature;
-use rstar::{primitives::GeomWithData, RTree, AABB};
-use utils::split_polygon;
+use rstar::{primitives::GeomWithData, RTree};
+use utils::{aabb, split_polygon};
 
 use crate::geo_helpers::SliceNearEndpoints;
 use crate::{
@@ -155,14 +155,6 @@ fn midpoint_distance(ls1: &LineString, ls2: &LineString) -> f64 {
     let pt1 = ls1.point_at_ratio_from_start(&Euclidean, 0.5).unwrap();
     let pt2 = ls2.point_at_ratio_from_start(&Euclidean, 0.5).unwrap();
     Euclidean.distance(pt1, pt2)
-}
-
-fn aabb<G: BoundingRect<f64, Output = Option<Rect<f64>>>>(geom: &G) -> AABB<Point> {
-    let bbox: Rect = geom.bounding_rect().unwrap().into();
-    AABB::from_corners(
-        Point::new(bbox.min().x, bbox.min().y),
-        Point::new(bbox.max().x, bbox.max().y),
-    )
 }
 
 fn find_connections(
