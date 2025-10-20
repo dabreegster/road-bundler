@@ -3,8 +3,9 @@ use geo::buffer::{BufferStyle, LineCap};
 use geo::{Buffer, Coord, Euclidean, Length, Line, LineIntersection, LineString, Polygon};
 use geojson::GeoJson;
 use rstar::{RTree, RTreeObject};
+use utils::Debugger;
 
-use crate::{Debugger, EdgeID, RoadBundler};
+use crate::{EdgeID, RoadBundler};
 
 pub fn debug_road_width(bundler: &RoadBundler, e: EdgeID) -> Result<String> {
     let mut debugger = Debugger::new(bundler.graph.mercator.clone());

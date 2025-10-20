@@ -15,14 +15,12 @@ use utils::Tags;
 use wasm_bindgen::prelude::*;
 
 use crate::areas::Areas;
-use crate::debugger::Debugger;
 use crate::faces::{make_faces, Face, FaceID, FaceKind};
 use crate::graph::{EdgeID, Graph, Intersection, IntersectionID, IntersectionProvenance};
 use crate::kinds::EdgeKind;
 
 mod areas;
 mod clean;
-mod debugger;
 mod dog_leg;
 mod dual_carriageway;
 mod faces;

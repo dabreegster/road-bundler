@@ -1,8 +1,9 @@
 use anyhow::Result;
 use geojson::GeoJson;
+use utils::Debugger;
 
 use crate::geo_helpers::linestring_bearing;
-use crate::{Debugger, EdgeID, EdgeKind, Face, FaceKind, Graph, RoadBundler};
+use crate::{EdgeID, EdgeKind, Face, FaceKind, Graph, RoadBundler};
 
 struct Sidepath {
     sidepath_edges: Vec<EdgeID>,

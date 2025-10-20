@@ -7,11 +7,11 @@ use geo::{
 };
 use geojson::Feature;
 use rstar::{primitives::GeomWithData, RTree};
-use utils::{aabb, split_polygon};
+use utils::{aabb, split_polygon, Debugger};
 
 use crate::geo_helpers::SliceNearEndpoints;
 use crate::{
-    Areas, Debugger, EdgeID, EdgeKind, Graph, Intersection, IntersectionID, IntersectionProvenance,
+    Areas, EdgeID, EdgeKind, Graph, Intersection, IntersectionID, IntersectionProvenance,
     RoadBundler,
 };
 

@@ -5,12 +5,12 @@ use geo::{Distance, Euclidean, LineString, Point};
 use geojson::GeoJson;
 use itertools::Itertools;
 use serde::Serialize;
-use utils::{collapse_degree_2, KeyedLineString};
+use utils::{collapse_degree_2, Debugger, KeyedLineString};
 
 use crate::geo_helpers::{average_linestrings, linestring_bearing};
 use crate::split_line::Splits;
 use crate::{
-    Debugger, EdgeID, EdgeKind, Face, FaceID, FaceKind, Graph, Intersection, IntersectionID,
+    EdgeID, EdgeKind, Face, FaceID, FaceKind, Graph, Intersection, IntersectionID,
     IntersectionProvenance, RoadBundler,
 };
 
